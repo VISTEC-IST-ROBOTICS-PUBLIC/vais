@@ -3,8 +3,6 @@ import numpy as np
 
 class Signal(object):
     
-
-
     def __init__():
         pass
 

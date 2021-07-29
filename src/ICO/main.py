@@ -2,11 +2,13 @@ import rospy
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from std_msgs.msg import Bool, Float32, String
 
+from ICO import signal
+
 
 class main(object):
 
     def __init__(self):
-        
+        self.signal =signal        
         #Instantiation
 
         #Parameters    
@@ -18,14 +20,15 @@ class main(object):
         
 
     def alvar_cb(self, alvar_pt):                   #alvar will keep spinning its callback
-        #for each alvar_pt
-        #store in list? list = alvar method?
-        #think about stamp, id, x, y, z management
+        return alvar_pt
 
-        pass
 
-    def main():
+    def main(self, alvar):
 
+        for m in alvar_pt:
+            storage = self.signal.pos(alvar_pt[m])
+        
+        
         #ref first
 
         #loop?

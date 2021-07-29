@@ -71,8 +71,7 @@ class Data(object):
         try:        
             with open(path, 'r') as f:
                 last_line = f.readlines()[-1]
-                
-                
+                              
                 try:
                     result = float(last_line.split(','))
                     return result

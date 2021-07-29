@@ -71,13 +71,14 @@ class Data(object):
         try:        
             with open(path, 'r') as f:
                 last_line = f.readlines()[-1]
-        
-                if last_line[1] is not '':
-                    #data available
-                    return last_line[1]
                 
-                else:
-                    return 0
+                
+                try:
+                    result = float(last_line.split(','))
+                    return result
+                except:
+                    print('No trace of previous weight')
+                    return 0.0
 
         except:
             print('Error: cannot load weight')

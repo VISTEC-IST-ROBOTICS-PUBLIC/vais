@@ -67,15 +67,17 @@ class Data(object):
 
     def load(self, filename):
         path = self.filepath(filename)
+
+        try:        
+            with open(path, 'r') as f:
+                last_line = f.readlines()[-1]
         
-        #modify this****
-        with open(path, 'r') as f:
-            last_line = f.readlines()[-1]
-            if last_line[1] is not '':
+                if last_line[1] is not '':
                     #data available
                     return last_line[1]
-            else:
-                return 0
+                
+                else:
+                    return 0
 
         except:
             print('Error: cannot load weight')

@@ -71,15 +71,16 @@ class Data(object):
         #modify this****
         with open(path, 'r') as f:
             last_line = f.readlines()[-1]
-            try:
-                #data available
-                
-                return sth
+            if last_line[1] is not '':
+                    #data available
+                    return last_line[1]
             else:
                 return 0
 
         except:
-            pass
+            print('Error: cannot load weight')
+            time.sleep(30)
+            sys.exit()
 
 
 ###Test area-------------------------------------------------------------------------------------------------------------------

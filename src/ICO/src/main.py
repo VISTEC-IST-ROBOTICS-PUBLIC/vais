@@ -25,9 +25,7 @@ class main(object):
 
     def main(self, alvar):
 
-        for m in alvar_pt:
-            storage = self.signal.pos(alvar_pt[m])
-        
+
         
         #ref first
 

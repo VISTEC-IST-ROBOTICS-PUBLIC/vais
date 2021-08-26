@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+ <launch>
+    <node name="VAIS" pkg="vais" type="learning_launch.py" output="screen"></node>
+
+</launch>
+
+
+

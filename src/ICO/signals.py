@@ -1,9 +1,9 @@
 import math
 import numpy as np
 
-class Signal(object):
+class ICO_Signal(object):
     
-    def __init__():
+    def __init__(self):
         pass
 
     def trigger(self, dict):

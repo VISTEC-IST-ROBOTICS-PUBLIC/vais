@@ -6,6 +6,9 @@ class Signal(object):
     def __init__():
         pass
 
+    def trigger(self, dict):
+        pass
+
     def pos(self, alvar_pt):
         #Retrieve each point from marker
         stamp = alvar_pt.markers.header.stamp

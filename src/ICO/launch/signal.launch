@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
- <launch>
-
-    <node name="signal" pkg="ico_pkg" type="signal_launch.py" output="screen">
-	</node>
-	
-</launch>

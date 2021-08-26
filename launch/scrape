@@ -1,8 +1,0 @@
-    <!--SSH node-->
-    <!--node name="aruco" pkg="vision_pkg" type="aruco_launch.py" output="screen" launch-prefix="gnome-terminal -command"--><!--/node-->
-
-    <!--Onscreen nodes-->
-    <!--node name="VAIS" pkg="vais" type="learning_launch.py" output="screen" launch-prefix="gnome-terminal =-command"--><!--/node-->	
-    
-
-

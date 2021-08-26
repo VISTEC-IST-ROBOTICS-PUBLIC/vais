@@ -19,36 +19,33 @@ class Core(object):
         
 
     def alvar_cb(self, alvar_pt):                   #alvar will keep spinning its callback
-  
 
-	#Debug
-	
-	#print('marker----------------------------------------------------------------')
-	#print alvar_pt.markers[1]
 
-	#print('size===================================================================')
-	#print(len(alvar_pt.markers))
+		if alvar_pt.markers:
+			#ETL from msg to dict
+			for index, value in enumerate(alvar_pt.markers):
+				#print (index)
+				#print(value.id)
+				#print(value.id, ': ', value.pose.pose.position.x)
+				self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
 
-	#print(type(alvar_pt.markers))
+			print self.pos_dict
+		
+		else:
+			print ('null')
 
-	#ETL from msg to dict
-	for index, value in enumerate(alvar_pt.markers):
-		#print (index)
-		#print(value.id)
-		#print(value.id, ': ', value.pose.pose.position.x)
-		self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
-	print self.pos_dict
 
-	#print (type(self.pos_dict[3][0]))
-	#1. forward to signal
-	#2. timestamp issue
-	#3. check value dict
-	#4. think about triggering things
 
-        #return self.pos_dict
+		#print (type(self.pos_dict[3][0]))
+		#1. forward to signal
+		#2. timestamp issue
+		#3. check value dict
+		#4. think about triggering things
+
+		return self.pos_dict
 
 
     if __name__ == "__main__":
-	print ('test')
+		print ('test')
 	
 

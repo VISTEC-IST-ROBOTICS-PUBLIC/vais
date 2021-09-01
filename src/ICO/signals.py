@@ -4,42 +4,26 @@ import numpy as np
 class ICO_Signal(object):
     
     def __init__(self):
-        pass
+        #default initial threshold
+        self.p_thr = 4
+        self.r_thr = 8
 
-    def trigger(self, dict):
-        pass
-
-    def pos(self, alvar_pt):
-        #Retrieve each point from marker
-        stamp = alvar_pt.markers.header.stamp
-        id = alvar_pt.markers.id
-
-        #Formatted to xx.yyy
-        x = self.alvar_scale(alvar_pt.markers.pose.pose.position.x)
-        y = self.alvar_scale(alvar_pt.markers.pose.pose.position.y)
-        z = self.alvar_scale(alvar_pt.markers.pose.pose.position.z)
-
-        return stamp, id, x, y, z
-
-    #Scale points from ALVAR
-    def alvar_scale(self, point):
-        
+    #Scale points from ALVAR (m to cm)
+    def alvar_scale(self, point):       
         ##This conversion is converting into xx.yyy format
-        new_scale = point * 100
-        truncated = self.truncated(new_scale)
-        return truncated
+        new_scale = self.truncated(point * 100)
+        return new_scale
 
     #Decimal points modification (3 points)
     def truncated(self, value):
         truncated = float('%.3f'%(value))
         return truncated
 
-    #Normalize the value
     def normalization(self, input, min, max):		
         nm = (input - min)/(max - min)
         return float(nm)
 
-    #LPF
+    #LPF (should be in ICO?)
     def LowPassFilter(self, sig, sig_prev):
         
         #Constants
@@ -50,11 +34,11 @@ class ICO_Signal(object):
 
         return new_sig
 
-    def euclidean_dist(self, ref_x, ref_y, ref_z, cur_x, cur_y, cur_z):
+    def euclidean_dist(self, ref_list, cur_list):
         #First, find the different
-        diff_x = ref_x-cur_x
-        diff_y = ref_y-cur_y
-        diff_z = ref_z-cur_z
+        diff_x = self.truncated(self.alvar_scale(ref_list[0])-self.alvar_scale(cur_list[0]))
+        diff_y = self.truncated(self.alvar_scale(ref_list[1])-self.alvar_scale(cur_list[1]))
+        diff_z = self.truncated(self.alvar_scale(ref_list[2])-self.alvar_scale(cur_list[2]))
 
         #Second, square them
         square_x = np.power(diff_x, 2)
@@ -62,16 +46,8 @@ class ICO_Signal(object):
         square_z = np.power(diff_z, 2)
 
         #Last, sum and square root
-        euc_result = math.sqrt(square_x+square_y+square_z)
-
-        #Truncated the result
-        euc_result = self.truncated(euc_result)
-
-        #Debugging purpose
-        #print("Euclidean Distance: ", euc_result)
+        euc_result = self.truncated(math.sqrt(square_x+square_y+square_z))
         return euc_result
-
-###Signal section-------------------------------------------------------------------------
 
     def dist_predict(self):
         pass
@@ -79,10 +55,7 @@ class ICO_Signal(object):
     def dist_reflex(self):
         pass
 
-    def obj_predict(self):
-        pass
-
-    def obj_reflex(self, key, stamp, ed):
+    def obj_reflex(self, ed):
         #format (id: stamp, p_signal, r_signal)    
 
         if ed < self.p_thr:
@@ -91,13 +64,17 @@ class ICO_Signal(object):
         elif ed > self.p_thr and ed < self.r_thr:
             nm = self.normalization(ed, self.p_thr, self.r_thr)
             nm_trunc = self.truncated(nm)
-            predict = 1.0
             return nm_trunc
-                
-        elif ed > self.r_thr:
-            return 1.0
 
         else:
             return 1.0
 
-        self.signal_dict[key] = [stamp, predict, reflex]
+    #main
+    def obj_signal(self, ref_list, cur_list):
+        euclidean = self.euclidean_dist(ref_list, cur_list)
+        reflex = self.obj_reflex(euclidean)
+        #predict is set to be always 1
+        return [1, reflex]
+
+    if __name__ == "__main__":
+	    print ('dummy main')

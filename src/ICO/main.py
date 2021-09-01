@@ -6,7 +6,6 @@ from signals import ICO_Signal
 class Core(object):
 
     def __init__(self):
-
         #Parameters    
         self.pos_dict = {}
         self.ref_dict = {}
@@ -24,7 +23,6 @@ class Core(object):
         rospy.Subscriber('/signal/init', Bool, self.init_cb, queue_size =1)
 
     def alvar_cb(self, alvar_pt):                           #alvar always keep spinning its callback
-
         time = alvar_pt.header.stamp
 
         if alvar_pt.markers:
@@ -35,23 +33,16 @@ class Core(object):
                 #print(value.id, ': ', value.pose.pose.position.x)
                 self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
             self.main(time, self.pos_dict)
-
         else:
+            #case of no markers
             print ('NULL: no alvar markers detected')
-
-		#print (type(self.pos_dict[3][0]))
-		#1. forward to signal
-		#3. check value dict
-		#4. think about triggering things
-
         return self.pos_dict
 
     def init_cb(self, signal):                              #initial signal to trigger a reference capture                         
         self.init = signal.data
 
     def main(self, time, pos_dict):
-        
-        print('Time: ', time)
+        #print('Time: ', time)
         #time conversion
         #second = self.epoch_conversion(time)
 
@@ -61,18 +52,22 @@ class Core(object):
 
         if self.ref_dict:                                   
             #checker
-            print ('REF: ', self.ref_dict)                  #Reference point
-            print ('POS: ', self.pos_dict)                  #Current point
-            #self.signal_generation(ref, pos)
+            #print ('REF: ', self.ref_dict)                  #Reference point
+            #print ('POS: ', self.pos_dict)                  #Current point
+            self.signal_generation(self.ref_dict, self.pos_dict)
         else:
             print('Dropped: Not enough information (Please Check REF/POS')
 
-    def signal_generation(self, ref, pos):
+    def signal_generation(self, ref, pos):  
         for key in ref: 
-            pass
-
-            #Key match
-            #if pos list disappeared reflex is 1 (out-of-sight)
+            if key in pos:
+                result = self.signal.obj_signal(ref[key], pos[key])   #Use position list only
+                self.sig_dict[key] = result
+            else:
+                print("Error: current POS not found, please check the object (PREDICT:0, REFLEX: 1")
+                self.sig_dict[key] = [0,1]
+        
+        print(self.sig_dict)
 
 
     def ico(sig_dict):

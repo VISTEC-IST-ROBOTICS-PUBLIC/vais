@@ -46,6 +46,7 @@ class Core(object):
 
     def init_cb(self, signal):                              #initial signal to trigger a reference capture                         
         self.init = signal.data
+
     def state_cb(self, signal):                              #initial signal to trigger a reference capture                         
         self.signal = signal.data
 
@@ -55,15 +56,12 @@ class Core(object):
         self.ref_capture(pos_dict)
 
         if self.ref_dict:                                   
-            #checker
-            #print ('REF: ', self.ref_dict)                  #Reference point
-            #print ('POS: ', self.pos_dict)                  #Current point
             self.signal_generation(self.ref_dict, self.pos_dict)
 
-            if self.diff_time(time):
+            if self.prev_time:
                 print('Notice: ICO')
-                diff_time = self.diff_time(time)
-                self.learn.ico(diff_time, self.state, self.sig_dict, self.prev_dict)
+                diff = self.diff_time(time)
+                self.learn.ico(time.to_sec(), diff, self.state, self.sig_dict, self.prev_dict)
 
             else:
                 pass
@@ -75,15 +73,15 @@ class Core(object):
 
     def diff_time(self, time):
         if self.prev_time != -1:
+
             diff_time = self.signal.truncated((time-self.prev_time).to_sec())
             self.prev_time = time
             return diff_time
 
         else:
             #initial state
-            print("Initial state: First log:, time/signal")
+            print("Initial state: First time/signal logged")
             self.prev_time = time
-            return -1
 
     def ref_capture(self, pos_dict):
         #if no reference stored and capture signal does not trigger

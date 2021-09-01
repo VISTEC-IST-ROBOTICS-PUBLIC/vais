@@ -22,11 +22,12 @@ class Data(object):
         script_path = os.path.abspath(__file__)
         script_dir = os.path.split(script_path)[0]
         rel_path = 'data/'+filename
-        filepath = os.path.join(script_dir, rel_path)
+        path = os.path.join(script_dir, rel_path)
         return path
 
     def filecheck(self, filename):
         path = self.filepath(filename)
+        print(path)
         try:
             if (os.path.exists(path) == True):
                 print('File exists')
@@ -46,19 +47,19 @@ class Data(object):
             with open(path,'w') as open_dat:
                 #create header
                 writer = csv.writer(open_dat)
-                #writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative", "Euclidean"])       #Header (if needed)
+                #writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative"])       #Header (if needed)
                 print("file created")
         except:
             print('Error: cannot create file')
             time.sleep(30)
             sys.exit()        
 
-    def save(self, filename, stamp, weight, predict, reflex, derivative, euclidean):
+    def save(self, filename, stamp, weight, predict, reflex, derivative):
         path = self.filepath(filename)
         try:
             with open(path,'a') as open_dat:
                 writer = csv.writer(open_dat)
-                writer.writerow([stamp, weight ,predict, reflex, derivative, euclidean])
+                writer.writerow([stamp, weight ,predict, reflex, derivative])
                 print("information saved")
         except:
             print('Error: cannot save file')
@@ -70,11 +71,14 @@ class Data(object):
 
         try:        
             with open(path, 'r') as f:
-                last_line = f.readlines()[-1]
-                              
                 try:
+                    last_line = f.readlines()[-1]
+                    print(last_line)
+                    print(type(last_line))
                     result = float(last_line.split(','))
-                    return result
+                    print(result)
+                    return result[1]
+                    time.sleep(30)
                 except:
                     print('No trace of previous weight')
                     return 0.0

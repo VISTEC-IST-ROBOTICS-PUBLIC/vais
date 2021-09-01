@@ -1,42 +1,17 @@
+from data_management import Data
 
-
-class Ico(object):
+class Learning(object):
     
     def __init__(self):
-        pass
+        self.data = Data()
 
-    def dist_predict(self):
-        pass
 
-    def dist_reflex(self):
-        pass
+#load
+#prev check
+#main
+#save
 
-    def obj_predict(self):
-        pass
-
-    def obj_reflex(self, key, stamp, ed):
-        #format (id: stamp, p_signal, r_signal)    
-
-        if ed < self.p_thr:
-            return 0.0
-
-        elif ed > self.p_thr and ed < self.r_thr:
-            nm = self.normalization(ed, self.p_thr, self.r_thr)
-            nm_trunc = self.truncated(nm)
-            predict = 1.0
-            return nm_trunc
-                
-        elif ed > self.r_thr:
-            return 1.0
-
-        else:
-            return 1.0
-
-        self.signal_dict[key] = [stamp, predict, reflex]
-
-###ICO section----------------------------------------------------------------------------------------------------------------------
-    #considering on 1. previous time 2. previous signal
-    def ico(self, stamp):
+    def ico(self, diff_time, state, sig_dict, prev_dict):
 
         #if key, load key with file
         #ICOLOG_ID_MOVEMENT.csv
@@ -61,7 +36,6 @@ class Ico(object):
         #highest (w_reflex*reflex)
         ##result = predict + reflex
 
-###Calculation section--------------------------------------------------------------------------------------------------------------
 
 
 

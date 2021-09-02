@@ -5,8 +5,9 @@ class ICO_Signal(object):
     
     def __init__(self):
         #default initial threshold
-        self.p_thr = 4
-        self.r_thr = 8
+        self.e_thr = 3
+        self.p_thr = 6
+        self.r_thr = 9
 
     #Scale points from ALVAR (m to cm)
     def alvar_scale(self, point):       
@@ -55,26 +56,35 @@ class ICO_Signal(object):
     def dist_reflex(self):
         pass
 
-    def obj_reflex(self, ed):
-        #format (id: stamp, p_signal, r_signal)    
+    def obj_calculation(self, ed):        #format (id: stamp, p_signal, r_signal)    
 
-        if ed < self.p_thr:
-            return 0.0
+        #case lies within exemption range
+        if ed < self.e_thr:
+            return 0.0, 0.0
 
+        #case of moving in a predictive area
+        elif ed >= self.e_thr and ed < self.p_thr:
+            nm = self.normalization(ed, self.e_thr, self.p_thr)
+            nm_trunc = self.truncated(nm)
+            return nm_trunc, 0.0
+
+        #case of moving in a reflexive area
         elif ed > self.p_thr and ed < self.r_thr:
             nm = self.normalization(ed, self.p_thr, self.r_thr)
             nm_trunc = self.truncated(nm)
-            return nm_trunc
+            return 1.0, nm_trunc
 
+        #move beyond reflexive area
         else:
-            return 1.0
+            return 1.0, 1.0
 
     #main
     def obj_signal(self, ref_list, cur_list):
         euclidean = self.euclidean_dist(ref_list, cur_list)
-        reflex = self.obj_reflex(euclidean)
-        #predict is set to be always 1
-        return [1, reflex]
+        predict, reflex = self.obj_calculation(euclidean)
+        print("PRED: ", predict)
+        print("REFL: ", reflex)
+        return [predict, reflex]
 
     if __name__ == "__main__":
 	    print ('dummy main')

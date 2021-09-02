@@ -65,7 +65,6 @@ class Core(object):
             self.signal_generation(self.ref_dict, self.pos_dict)
 
             if self.prev_time:
-                print('Notice: ICO')
                 diff = self.diff_time(time)
                 date_time = datetime.datetime.fromtimestamp(time.to_sec())
                 result = self.learn.ico(date_time, diff, self.state, self.sig_dict, self.prev_dict)
@@ -89,14 +88,14 @@ class Core(object):
 
         else:
             #initial state
-            print("Initial state: First time/signal logged")
+            print("Initial state: First timestamp is logged")
             self.prev_time = time
 
     def ref_capture(self, pos_dict):
         #if no reference stored and capture signal does not trigger
         if not self.ref_dict and self.init == True:
             self.ref_dict = pos_dict.copy()
-            print ('REF: ', self.ref_dict)
+            print ('Reference point: ', self.ref_dict)
         
         else:
             pass
@@ -116,6 +115,8 @@ class Core(object):
             else:
                 print("Error: current POS not found, please check the object (PREDICT:0, REFLEX: 1")
                 self.sig_dict[key] = [0,1]
+                time.sleep(30)
+                sys.exit()
         
         #Debugging purpose
         #print(self.sig_dict)

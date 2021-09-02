@@ -47,7 +47,7 @@ class Data(object):
                 #create header
                 writer = csv.writer(open_dat)
                 #Header
-                writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative"])       #Header (if needed)
+                writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative"])
                 print("file created")
         except:
             print('Error: cannot create file')
@@ -84,7 +84,5 @@ class Data(object):
             time.sleep(30)
             sys.exit()
 
-
-###Test area-------------------------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
   pass

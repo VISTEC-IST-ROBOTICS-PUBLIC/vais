@@ -5,9 +5,11 @@ class ICO_Signal(object):
     
     def __init__(self):
         #default initial threshold
-        self.e_thr = 3
-        self.p_thr = 6
-        self.r_thr = 9
+        self.e_obj_thr = 3
+        self.p_obj_thr = 6
+        self.r_obj_thr = 9
+        self.p_dist_thr = 0
+        self.r_dist_thr = 1
 
     #Scale points from ALVAR (m to cm)
     def alvar_scale(self, point):       
@@ -50,27 +52,24 @@ class ICO_Signal(object):
         euc_result = self.truncated(math.sqrt(square_x+square_y+square_z))
         return euc_result
 
-    def dist_predict(self):
-        pass
-
-    def dist_reflex(self):
+    def dist_calculation(self):
         pass
 
     def obj_calculation(self, ed):        #format (id: stamp, p_signal, r_signal)    
 
         #case lies within exemption range
-        if ed < self.e_thr:
+        if ed < self.e_obj_thr:
             return 0.0, 0.0
 
         #case of moving in a predictive area
-        elif ed >= self.e_thr and ed < self.p_thr:
-            nm = self.normalization(ed, self.e_thr, self.p_thr)
+        elif ed >= self.e_obj_thr and ed < self.p_obj_thr:
+            nm = self.normalization(ed, self.e_obj_thr, self.p_obj_thr)
             nm_trunc = self.truncated(nm)
             return nm_trunc, 0.0
 
         #case of moving in a reflexive area
-        elif ed > self.p_thr and ed < self.r_thr:
-            nm = self.normalization(ed, self.p_thr, self.r_thr)
+        elif ed > self.p_obj_thr and ed < self.r_obj_thr:
+            nm = self.normalization(ed, self.p_obj_thr, self.r_obj_thr)
             nm_trunc = self.truncated(nm)
             return 1.0, nm_trunc
 
@@ -82,8 +81,8 @@ class ICO_Signal(object):
     def obj_signal(self, ref_list, cur_list):
         euclidean = self.euclidean_dist(ref_list, cur_list)
         predict, reflex = self.obj_calculation(euclidean)
-        print("PRED: ", predict)
-        print("REFL: ", reflex)
+        print("PREDICT: ", predict)
+        print("REFLEX: ", reflex)
         return [predict, reflex]
 
     if __name__ == "__main__":

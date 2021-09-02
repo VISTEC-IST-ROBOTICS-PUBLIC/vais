@@ -32,7 +32,7 @@ class Learning(object):
                 else:
                     pass
         
-            print(self.res_dict)
+            print("RESULT: ",self.res_dict)
             #find max to publish it to drive
             find_max = max(self.res_dict.keys(), key=lambda k:self.res_dict[k])
             max_value = self.res_dict[find_max]

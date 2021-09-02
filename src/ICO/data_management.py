@@ -39,7 +39,6 @@ class Data(object):
             time.sleep(30)
             sys.exit()
 
-
     def create(self, filename):
         try:
             #create file
@@ -69,7 +68,6 @@ class Data(object):
 
     def load(self, filename):
         path = self.filepath(filename)
-
         try:        
             with open(path, 'r') as f:
                 try:
@@ -77,7 +75,6 @@ class Data(object):
                     line = last_line.split(',')
                     weight = float(line[1])
                     return weight
-                    time.sleep(30)
                 except:
                     print('No trace of previous weight')
                     return 0.0

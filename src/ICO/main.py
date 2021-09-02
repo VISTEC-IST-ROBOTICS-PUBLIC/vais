@@ -4,6 +4,8 @@ from std_msgs.msg import Bool, Float32, String
 from signals import ICO_Signal
 from learn import Learning
 import datetime
+import sys
+import time
 
 class Core(object):
 
@@ -15,6 +17,7 @@ class Core(object):
         self.prev_dict = {}
         self.prev_time = -1
         self.state = ''
+        self.prev_reflex = 0
 
         #Instantiation
         self.signal = ICO_Signal()
@@ -103,6 +106,13 @@ class Core(object):
             if key in pos:
                 result = self.signal.obj_signal(ref[key], pos[key])   #Use position list only
                 self.sig_dict[key] = result
+                if self.prev_reflex == 1:
+                    print("Reflex hits: Pause")
+                    time.sleep(30)
+                    sys.exit()               
+                else:                 
+                    self.prev_reflex = self.sig_dict[key][1]
+                
             else:
                 print("Error: current POS not found, please check the object (PREDICT:0, REFLEX: 1")
                 self.sig_dict[key] = [0,1]

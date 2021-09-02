@@ -3,6 +3,7 @@ from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from std_msgs.msg import Bool, Float32, String
 from signals import ICO_Signal
 from learn import Learning
+import datetime
 
 class Core(object):
 
@@ -22,8 +23,10 @@ class Core(object):
         #Flags
         self.init = False
 
-        #Topics
-        ##AR alvar markers (From alvar package)
+        #Pub topic
+        self.ico_out = rospy.Publisher('/ico/output', Float32, queue_size = 1)
+
+        #Sub topics
         rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self.alvar_cb, queue_size=1)
         rospy.Subscriber('/signal/init', Bool, self.init_cb, queue_size =1)
         rospy.Subscriber('/robot/state', String, self.state_cb, queue_size=1)
@@ -61,8 +64,11 @@ class Core(object):
             if self.prev_time:
                 print('Notice: ICO')
                 diff = self.diff_time(time)
-                self.learn.ico(time.to_sec(), diff, self.state, self.sig_dict, self.prev_dict)
-
+                date_time = datetime.datetime.fromtimestamp(time.to_sec())
+                result = self.learn.ico(date_time, diff, self.state, self.sig_dict, self.prev_dict)
+                #publish to drive
+                self.ico_out.publish(result)
+ 
             else:
                 pass
             #Copy to previous signal

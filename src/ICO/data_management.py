@@ -47,7 +47,8 @@ class Data(object):
             with open(path,'w') as open_dat:
                 #create header
                 writer = csv.writer(open_dat)
-                #writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative"])       #Header (if needed)
+                #Header
+                writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative"])       #Header (if needed)
                 print("file created")
         except:
             print('Error: cannot create file')
@@ -73,11 +74,9 @@ class Data(object):
             with open(path, 'r') as f:
                 try:
                     last_line = f.readlines()[-1]
-                    print(last_line)
-                    print(type(last_line))
-                    result = float(last_line.split(','))
-                    print(result)
-                    return result[1]
+                    line = last_line.split(',')
+                    weight = float(line[1])
+                    return weight
                     time.sleep(30)
                 except:
                     print('No trace of previous weight')

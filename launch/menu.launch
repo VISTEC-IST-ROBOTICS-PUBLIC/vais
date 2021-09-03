@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+ <launch>
+    <node name="ICO_menu" pkg="vais" type="menu_launch.py" output="screen"></node>
+</launch>

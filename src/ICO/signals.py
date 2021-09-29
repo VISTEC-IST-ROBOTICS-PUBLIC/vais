@@ -28,11 +28,9 @@ class ICO_Signal(object):
 
     #LPF (should be in ICO?)
     def LowPassFilter(self, sig, sig_prev):
-        
         #Constants
         sig_factor = 0.7
         sig_prev_factor = 0.3
-
         new_sig = (sig_factor * sig) + (sig_prev_factor * sig_prev)
 
         return new_sig
@@ -51,9 +49,6 @@ class ICO_Signal(object):
         #Last, sum and square root
         euc_result = self.truncated(math.sqrt(square_x+square_y+square_z))
         return euc_result
-
-    def dist_calculation(self):
-        pass
 
     def obj_calculation(self, ed):        #format (id: stamp, p_signal, r_signal)    
 

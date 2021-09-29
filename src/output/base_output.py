@@ -58,13 +58,10 @@ class BaseOpClass(object):
     #Publishers
     #MOVO Physical Output Pubs
     self.motion_pub = rospy.Publisher('/movo/cmd_vel', Twist, queue_size=1, latch=False)
-    self.gp_cmd = rospy.Publisher('/movo/gp_command', ConfigCmd, queue_size=1)
     self.init_pub = rospy.Publisher('/signal/init',Bool, queue_size = 1)
 
-    #Init pub to disable everything once it's done.
-    rospy.Subscriber('/signal/init',Bool, self.init_cb, queue_size = 1)
-
     #Signal subs
+    rospy.Subscriber('/signal/init',Bool, self.init_cb, queue_size = 1)
     rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size = 1)
     rospy.Subscriber('/signal/reference', Bool, self.reference_cb, queue_size = 1)
 
@@ -79,6 +76,9 @@ class BaseOpClass(object):
 
   #Note use rqt_reconfigure to modify maximum velocity/acceleration to 1.0m/s and 0.5m/s2
 
+
+##ref odom, cur odom, target_odom
+
   def capture_refodom(self, data):
     #Reference position must be captured at the start of the node
     if self.reference == False:
@@ -90,74 +90,32 @@ class BaseOpClass(object):
         self.refodom[1] = data.pose.pose.position.y
         self.refodom[2] = data.pose.pose.orientation.z
         self.refodom[3] = data.pose.pose.orientation.w
-        self.refeuler = self.quaterniontoeuler(self.refodom_x, self.refodom_y, self.refodom_z, self.refodom_w)
+        self.ref_euler = self.quaterniontoeuler(self.refodom_x, self.refodom_y, self.refodom_z, self.refodom_w)
         self.once = True
         print('Reference Odometry is collected')
       else:
         #print("Reference is already captured")
         pass
 
-  def init_cb(self, signal):
 
-    self.init = signal.data
-    return self.init
-
-  def shutdown_cb(self, signal):
-    #Signal to shutdown this from input node.
-    if signal.data == True:
-      rospy.signal_shutdown("Shutdown signal is received, turn this node off")
-
-  def reference_cb(self, signal):
-    #Manually triggered to capture a reference point from the input node
-    self.reference = signal.data
-
-  def state_cb(self, state):
-    self.state = state.data
-
-  def move_cb(self, signal):
-    #Signal from input node to order the robot to move
-    self.move = signal.data
-
-  def lin_cb(self, value):
-    self.lin_speed = value.data
-
-  def ang_cb(self,value):
-    self.ang_speed = value.data
-
-  def odomcb(self, value):
-
-    #This callback keeps capturing the current odom of the robot
-    self.curodom_x = value.pose.pose.position.x
-    self.curodom_y = value.pose.pose.position.y
-    self.curodom_z = value.pose.pose.orientation.z
-    self.curodom_w = value.pose.pose.orientation.w
-    self.cureuler_z = self.quaterniontoeuler(self.curodom_x, self.curodom_y, self.curodom_z, self.curodom_w)
-
-    #Trigger reference odometry
-    self.capture_refodom(value)
-
-  def outcb(self, value):
     
     if self.init == False:
-      #print("Waiting for init signal")
       pass
-
     else:
       if self.move == False:
-        #print("Waiting for move signal")
         pass
       else:
         self.move_base(float(value.output))
 
   def move_base(self, value):
 
-      #Set GP mod of MOVO to a tractor state. Need a further investigation
-      #self.gpcmd_mode('TRACTOR')
-
-      #Output parameter must be match with a MOVO speed on rqt_reconfigure
+      #Output parameter must be matched with MOVO speed on rqt_reconfigure
       if self.state == 'Linear':
         self.max_speed = self.lin_speed
-        result_lin = self.euclidean_dist_lin(self.refodom_x, self.refodom_y, self.curodom_x, self.curodom_y)
+        #current distance from goal
+        result_lin = self.linear_euclidean(self.refodom_x, self.refodom_y, self.curodom_x, self.curodom_y)
+
+        speed = self.speed_modifier()
 
         self.dist = result_lin
         if result_lin > 5:
@@ -170,15 +128,9 @@ class BaseOpClass(object):
 
       elif self.state == 'Angular':
         self.max_speed = self.ang_speed
+        result_ang = self.angle_difference(self.ref_euler,self.cureuler_z)
         print(self.cureuler_z)
         self.dist = self.cureuler_z
-        #Find an angular factor     #Problem is the value is not linearly received, for now manually triggerred 
-        #if  self.cureuler_z> 179:
-        #  print("Warning: Reach angular distance limit")
-        #  if self.limit_ct < 2:
-        #    self.limit_ct += 1
-        #  else:
-        #    self.move = False
 
       else:
         print("Error: Please check maximum speed parameter")
@@ -239,16 +191,14 @@ class BaseOpClass(object):
     #Axis Z, turn
     self.move_cmd.angular.z = angular_z
 
-    return self.move_cm
+    return self.move_cmd
 
-  #why euclidean? GG
-  def euclidean_dist_ang(self, ref_z, cur_z):
+  def angle_difference(self, ref_z, cur_z):
     diff_z = ref_z-cur_z
     square_z = np.power(diff_z, 2)
     euc_result = math.sqrt(square_z)
 
-  #this would make sense in terms of slight movement with x and y
-  def euclidean_dist_lin(self, ref_x, ref_y, cur_x, cur_y):
+  def linear_euclidean(self, ref_x, ref_y, cur_x, cur_y):
     #First, find the different
     diff_x = ref_x-cur_x
     diff_y = ref_y-cur_y
@@ -259,8 +209,6 @@ class BaseOpClass(object):
 
     #Last, sum and square root
     euc_result = math.sqrt(square_x+square_y)
-
-    print("Euclidean Distance: ", euc_result)
     return euc_result
 
   def normalization(self, input, min, max):		
@@ -284,36 +232,61 @@ class BaseOpClass(object):
     #Only yaw is active
     return Z
 
-  def negativeangleconverter(self, angle):
+  def negative_angle_converter(self, angle):
     #check output first
     if angle < 0:
       angle = 360+ angle
       return angle
     pass
 
-  def gpcmd_mode(self, cmd):
-    #group command use to invoke the MOVO movement mode. Need a further investigation
-    NONE = 0
-    STANDBY = 4
-    TRACTOR = 5
+  def init_cb(self, signal):
+    self.init = signal.data
+    return self.init
 
-    self.conf_cmd.header.stamp = rospy.get_rostime()
-    if cmd == 'STANDBY':
-      self.conf_cmd.gp_cmd = "GENERAL_PURPOSE_CMD_SET_OPERATIONAL_MODE"
-      self.conf_cmd.gp_param = STANDBY
-    elif cmd == 'TRACTOR':
-      self.conf_cmd.gp_cmd = "GENERAL_PURPOSE_CMD_SET_OPERATIONAL_MODE"
-      self.conf_cmd.gp_param = TRACTOR
+  def shutdown_cb(self, signal):
+    #Signal to shutdown this from input node.
+    if signal.data == True:
+      rospy.signal_shutdown("Shutdown signal is received, turn this node off")
+
+  def reference_cb(self, signal):
+    #Manually triggered to capture a reference point from the input node
+    self.reference = signal.data
+
+  def state_cb(self, state):
+    self.state = state.data
+
+  def move_cb(self, signal):
+    #Signal from input node to order the robot to move
+    self.move = signal.data
+
+  def lin_cb(self, value):
+    self.lin_speed = value.data
+
+  def ang_cb(self,value):
+    self.ang_speed = value.data
+
+  def odomcb(self, value):
+
+    #This callback keeps capturing the current odom of the robot
+    self.curodom_x = value.pose.pose.position.x
+    self.curodom_y = value.pose.pose.position.y
+    self.curodom_z = value.pose.pose.orientation.z
+    self.curodom_w = value.pose.pose.orientation.w
+    self.cureuler_z = self.quaterniontoeuler(self.curodom_x, self.curodom_y, self.curodom_z, self.curodom_w)
+
+    #Trigger reference odometry
+    self.capture_refodom(value)
+
+  #slower down from factor% range
+  def speed_modifier(self, speed,cur_pos, max_pos, pos_factor):
+    if cur_pos < max_pos/pos_factor: 
+      result = speed*(1-(cur_pos/(max_pos/pos_factor)))
     else:
-      self.conf_cmd.gp_cmd = 'GENERAL_PURPOSE_CMD_NONE'
-      self.conf_cmd.gp_param = NONE
-    self.gp_cmd.publish(self.conf_cmd)
+      result = speed
+    return result
 
-#Test area
-if __name__ == "__main__":
-  pass
-
-
+  #need?
+  def outcb(self, value):
 
 ##Note Kinova movo move speed is 2 mps //clamp at 0.5 m/s
 #https://newatlas.com/kinova-robotics-movo/59883/

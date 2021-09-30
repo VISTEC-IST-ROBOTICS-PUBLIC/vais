@@ -2,8 +2,9 @@
 
 #MOVO modules
 #from system_defines import *
+#Note use rqt_reconfigure to modify maximum velocity/acceleration of MOVO to 1.0m/s and 0.5m/s2
+
 from movo_msgs.msg import *
-from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32, Float64, Bool, String
 from nav_msgs.msg import Odometry
@@ -21,39 +22,27 @@ class BaseOpClass(object):
     self.move_cmd = Twist()
     self.conf_cmd = ConfigCmd()
 
-    #Output from a previous node
-    self.out = None
+    #Trigger
     self.move = False
 
-    #Reference Odometry
-    self.ref_euler = {}
-
-    #Current Odometry
-    self.curodom_x = None
-    self.curodom_y = None
-    self.curodom_z = None
-    self.curodom_w = None
-    self.cureuler_z = None
+    #Odometry list [pos_x, pos_y, orient_z]
+    self.ref_odom = []
+    self.cur_odom = []
+    self.tar_odom = []
+    self.ico_out = {}
 
     #Parameters
-    self.max_speed = 1.5         #maximum speed       
+    self.max_speed = None
     self.reference = False
-
     self.lin_speed = None
     self.ang_speed = None
 
+    #state
     self.state = None
-    
-    #Counter flag
-    self.ct = 0
-    self.limit_ct = 0
-    self.lower_ct = 0
-    self.upper_ct = 0
-
     self.init = None
 
-    #Distance move
-    self.dist = None
+    #Target example
+    self.tar_odom = [5, 5 ,0]
 
     #Publishers
     #MOVO Physical Output Pubs
@@ -68,117 +57,77 @@ class BaseOpClass(object):
     #Robot information receievers Subs
     rospy.Subscriber('/robot/state', String, self.state_cb, queue_size = 1)
     rospy.Subscriber('/robot/move', Bool, self.move_cb, queue_size = 1)
-    rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odomcb, queue_size = 1)
+    rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
 
     #Linear/Angular maximum speed Subs
     rospy.Subscriber('/data/lin_max', Float32, self.lin_cb, queue_size = 1)
     rospy.Subscriber('/data/ang_max', Float32, self.ang_cb, queue_size = 1)
 
-  #Note use rqt_reconfigure to modify maximum velocity/acceleration to 1.0m/s and 0.5m/s2
+    #ICO output
+    rospy.Subscriber('/ico/output', Float32, self.ico_cb, queue_size = 1)
 
-
-##ref odom, cur odom, target_odom
-
-  def capture_refodom(self, data):
-    #Reference position must be captured at the start of the node
+  #Reference position must be captured at the start of the node (Toggle)
+  def capture_ref(self, data):
     if self.reference == False:
       #print("Waiting for a reference signal")
       pass
     else:
       if self.once == False:
-        self.refodom[0] = data.pose.pose.position.x
-        self.refodom[1] = data.pose.pose.position.y
-        self.refodom[2] = data.pose.pose.orientation.z
-        self.refodom[3] = data.pose.pose.orientation.w
-        self.ref_euler = self.quaterniontoeuler(self.refodom_x, self.refodom_y, self.refodom_z, self.refodom_w)
+        self.ref_odom = self.cur_odom.copy()
         self.once = True
         print('Reference Odometry is collected')
       else:
         #print("Reference is already captured")
         pass
 
+  #target goal given by user
+  def target_odom(self, target_list):
+    pos_x = self.ref_odom[0]+target_list[0]
+    pos_y = self.ref_odom[1]+target_list[1]
+    orient_z = self.ref_odom[2]+target_list[2]
+    self.tar_odom = [pos_x, pos_y, orient_z]
 
-    
-    if self.init == False:
-      pass
+  #current odom should be used in a wheel_odom callback
+  def current_odom(self, data):
+    pos_x = data.pose.pose.position.x
+    pos_y = data.pose.pose.position.y
+    orient_z = self.quaternion_to_euler(data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w)
+    self.cur_odom = [pos_x, pos_y, orient_z]
+
+  def output_main(self,data):
+    self.current_odom(data)                     #current_odom always trigger
+    self.capture_ref(data)                      #trigger once
+    self.target_odom(self.tar_odom)             #list
+
+
+    ####Tracking
+    if self.state == "linear":
+      diff = self.linear_euclidean(self.cur_odom, self.target_odom)
+    elif self.state == "angular":
+      diff = self.angle_difference(self.cur_odom, self.target_odom)
     else:
-      if self.move == False:
-        pass
-      else:
-        self.move_base(float(value.output))
+      print("Error please check input state")
 
-  def move_base(self, value):
+    #######this thing has to be looked up
+    #1. difference between distance and angle (might need to use a normalization factor?)
+    #2. speed has to be reduce to minimum value that MOVO can be barely drived and cut off to 0
+    #3. Incase of continuous route, we might need to reset a reference onwards
+    #4. speed and position matters
+    
+    speed = self.max_speed-(self.max_speed*self.ico_out)
+    result_speed = self.speed_modifier(speed,diff, 2)
+    self.publish_output(result_speed)
 
-      #Output parameter must be matched with MOVO speed on rqt_reconfigure
-      if self.state == 'Linear':
-        self.max_speed = self.lin_speed
-        #current distance from goal
-        result_lin = self.linear_euclidean(self.refodom_x, self.refodom_y, self.curodom_x, self.curodom_y)
-
-        speed = self.speed_modifier()
-
-        self.dist = result_lin
-        if result_lin > 5:
-          print("Warning: Reach linear distance limit (4 meter)")
-          if self.limit_ct < 2:
-            self.limit_ct += 1
-          else:
-            self.init_pub.publish(False)
-            self.move = False
-
-      elif self.state == 'Angular':
-        self.max_speed = self.ang_speed
-        result_ang = self.angle_difference(self.ref_euler,self.cureuler_z)
-        print(self.cureuler_z)
-        self.dist = self.cureuler_z
-
-      else:
-        print("Error: Please check maximum speed parameter")
-        self.dist = 0
-
-      drive = self.max_speed - (self.max_speed*value)                
-
-
-      #Send info to log
-      if drive is not None and self.dist is not None:
-        self.output_pub(drive, self.dist)
-
-      #Debugging purpose
-      print('Drive value: ', drive)
-
-      #Warning when Drive output is lower than 0
-      if drive < 0:
-        drive = 0
-        print("Warning: Drive output is lower than 0")
-        if self.lower_ct < 5:
-          self.lower_ct += 1
-        else:
-          self.init_pub.publish(False)
-          self.move = False
-
-      #Speed cap than might be generated from ICO
-      elif drive > self.max_speed:
-        drive = self.max_speed
-        print("Warning: Drive output is greater than max speed")
-        
-        if self.upper_ct < 5:
-          self.upper_ct += 1
-        else: 
-          self.init_pub.publish(False)
-          self.move = False
-
-      else:
-
-        if self.state == 'Linear':
-            print("Linear: ", drive)
-            self.motion_pub.publish(self.twist_body(drive, 0, 0))
-
-        elif self.state == 'Angular':
-            print("Angular:  ", drive)
-            self.motion_pub.publish(self.twist_body(0, 0, drive))
-
-        else:
-          print("MOVO Output error: Please check a state command")
+  #Method to publish output
+  def publish_output(self,drive):
+    if self.state == 'Linear':
+      print("Linear: ", drive)
+      self.motion_pub.publish(self.twist_body(drive, 0, 0))
+    elif self.state == 'Angular':
+      print("Angular:  ", drive)
+      self.motion_pub.publish(self.twist_body(0, 0, drive))
+    else:
+      print("MOVO Output error: Please check a state command")
 
   #Speed message constructor
   def twist_body(self, linear_x, linear_y, angular_z):
@@ -193,15 +142,14 @@ class BaseOpClass(object):
 
     return self.move_cmd
 
-  def angle_difference(self, ref_z, cur_z):
-    diff_z = ref_z-cur_z
-    square_z = np.power(diff_z, 2)
-    euc_result = math.sqrt(square_z)
+  def angle_difference(self, cur_list, tar_list):
+    diff_z = tar_list[2] - cur_list[2]
+    return diff_z
 
-  def linear_euclidean(self, ref_x, ref_y, cur_x, cur_y):
+  def linear_euclidean(self, cur_list, tar_list):
     #First, find the different
-    diff_x = ref_x-cur_x
-    diff_y = ref_y-cur_y
+    diff_x = tar_list[0] - cur_list[0]
+    diff_y = tar_list[1] - cur_list[1]
 
     #Second, square them
     square_x = np.power(diff_x, 2)
@@ -239,6 +187,14 @@ class BaseOpClass(object):
       return angle
     pass
 
+  def target_distance(self, ref_dist, tar_dist):
+    result = ref_dist + tar_dist
+    return result
+
+  def target_angle(self, ref_angle,tar_angle):
+    result = ref_angle+tar_angle
+    return result
+
   def init_cb(self, signal):
     self.init = signal.data
     return self.init
@@ -265,28 +221,20 @@ class BaseOpClass(object):
   def ang_cb(self,value):
     self.ang_speed = value.data
 
-  def odomcb(self, value):
+  def odom_cb(self, value):
+    self.output_main(value)
 
-    #This callback keeps capturing the current odom of the robot
-    self.curodom_x = value.pose.pose.position.x
-    self.curodom_y = value.pose.pose.position.y
-    self.curodom_z = value.pose.pose.orientation.z
-    self.curodom_w = value.pose.pose.orientation.w
-    self.cureuler_z = self.quaterniontoeuler(self.curodom_x, self.curodom_y, self.curodom_z, self.curodom_w)
-
-    #Trigger reference odometry
-    self.capture_refodom(value)
+  def ico_cb(self, value):
+    self.ico_out = value
 
   #slower down from factor% range
-  def speed_modifier(self, speed,cur_pos, max_pos, pos_factor):
-    if cur_pos < max_pos/pos_factor: 
-      result = speed*(1-(cur_pos/(max_pos/pos_factor)))
+  def speed_modifier(self, speed, diff, pos_factor):
+    if diff < diff/pos_factor: 
+      result = speed*(1-(diff/pos_factor))
     else:
       result = speed
     return result
 
-  #need?
-  def outcb(self, value):
 
 ##Note Kinova movo move speed is 2 mps //clamp at 0.5 m/s
 #https://newatlas.com/kinova-robotics-movo/59883/
@@ -294,6 +242,3 @@ class BaseOpClass(object):
 #NOTE
 #Range of the value: linear x -1 to 1 linear y -1 to 1 angular z -1 to 1
 #Ref https://answers.ros.org/question/9697/error-assigning-a-python-quaternion/
-
-
-

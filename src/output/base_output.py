@@ -17,18 +17,18 @@ import numpy as np
 class BaseOpClass(object):
   def __init__(self):
 
-    #Parameters
-    ##construct a twist message
+    ##Twist message
     self.move_cmd = Twist()
-    self.conf_cmd = ConfigCmd()
 
-    #Trigger
+    #Trigger to makes a robot move
     self.move = False
 
     #Odometry list [pos_x, pos_y, orient_z]
     self.ref_odom = []
     self.cur_odom = []
     self.tar_odom = []
+
+    #output from ICO
     self.ico_out = {}
 
     #Parameters
@@ -37,15 +37,18 @@ class BaseOpClass(object):
     self.lin_speed = None
     self.ang_speed = None
 
-    #state
+    #Robot state
     self.state = None
     self.init = None
 
     #Target example
     self.tar_odom = [5, 5 ,0]
 
+    #Deceleration factor
+    self.decel_factor = 1/10
+
     #Publishers
-    #MOVO Physical Output Pubs
+    #MOVO Physical Output pubs
     self.motion_pub = rospy.Publisher('/movo/cmd_vel', Twist, queue_size=1, latch=False)
     self.init_pub = rospy.Publisher('/signal/init',Bool, queue_size = 1)
 
@@ -53,20 +56,23 @@ class BaseOpClass(object):
     rospy.Subscriber('/signal/init',Bool, self.init_cb, queue_size = 1)
     rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size = 1)
     rospy.Subscriber('/signal/reference', Bool, self.reference_cb, queue_size = 1)
-
-    #Robot information receievers Subs
-    rospy.Subscriber('/robot/state', String, self.state_cb, queue_size = 1)
     rospy.Subscriber('/robot/move', Bool, self.move_cb, queue_size = 1)
+
+    #Robot information receievers subs
+    rospy.Subscriber('/robot/state', String, self.state_cb, queue_size = 1)
     rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
 
-    #Linear/Angular maximum speed Subs
+    #Linear/Angular maximum speed subs
     rospy.Subscriber('/data/lin_max', Float32, self.lin_cb, queue_size = 1)
     rospy.Subscriber('/data/ang_max', Float32, self.ang_cb, queue_size = 1)
+
+    #Linear/Angular maximum distance subs
 
     #ICO output
     rospy.Subscriber('/ico/output', Float32, self.ico_cb, queue_size = 1)
 
-  #Reference position must be captured at the start of the node (Toggle)
+  #Reference position must be captured at the start of the node (Toggle?)
+  #check capture condition?
   def capture_ref(self, data):
     if self.reference == False:
       #print("Waiting for a reference signal")
@@ -99,7 +105,6 @@ class BaseOpClass(object):
     self.capture_ref(data)                      #trigger once
     self.target_odom(self.tar_odom)             #list
 
-
     ####Tracking
     if self.state == "linear":
       diff = self.linear_euclidean(self.cur_odom, self.target_odom)
@@ -114,9 +119,12 @@ class BaseOpClass(object):
     #3. Incase of continuous route, we might need to reset a reference onwards
     #4. speed and position matters
     
-    speed = self.max_speed-(self.max_speed*self.ico_out)
-    result_speed = self.speed_modifier(speed,diff, 2)
-    self.publish_output(result_speed)
+    if diff >=0:
+      speed = (self.max_speed-(self.max_speed*self.ico_out))*self.decel_rate(diff, self.max_speed)
+    else:
+      print("Done")
+      speed = 0
+    self.publish_output(speed)
 
   #Method to publish output
   def publish_output(self,drive):
@@ -131,15 +139,11 @@ class BaseOpClass(object):
 
   #Speed message constructor
   def twist_body(self, linear_x, linear_y, angular_z):
-
-    #construct a message
     #Axis X/Y, move
     self.move_cmd.linear.x = linear_x
     self.move_cmd.linear.y = linear_y
-
     #Axis Z, turn
     self.move_cmd.angular.z = angular_z
-
     return self.move_cmd
 
   def angle_difference(self, cur_list, tar_list):
@@ -159,10 +163,6 @@ class BaseOpClass(object):
     euc_result = math.sqrt(square_x+square_y)
     return euc_result
 
-  def normalization(self, input, min, max):		
-    nm = (input - min)/(max - min)
-    return float(nm)
-
   def quaterniontoeuler(self, x, y, z, w):
     t0 = +2.0 * (w * x + y * z)
     t1 = +1.0 - 2.0 * (x * x + y * y)
@@ -177,9 +177,10 @@ class BaseOpClass(object):
     t4 = +1.0 - 2.0 * (y * y + z * z)
     Z = math.degrees(math.atan2(t3, t4))
 
-    #Only yaw is active
+    #Service robot doesn't have roll and pich rotation, Only yaw is active
     return Z
 
+  #need to check
   def negative_angle_converter(self, angle):
     #check output first
     if angle < 0:
@@ -227,12 +228,13 @@ class BaseOpClass(object):
   def ico_cb(self, value):
     self.ico_out = value
 
-  #slower down from factor% range
-  def speed_modifier(self, speed, diff, pos_factor):
-    if diff < diff/pos_factor: 
-      result = speed*(1-(diff/pos_factor))
+  #slower down when it reaches a certain distance
+  def decel_rate(self, diff, max_pos):
+    min_pos = max_pos*self.decel_factor
+    if diff < min_pos: 
+      result = 1-((diff-min_pos)/(max_pos-min_pos))
     else:
-      result = speed
+      result = 1
     return result
 
 

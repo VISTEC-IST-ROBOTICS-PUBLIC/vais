@@ -17,7 +17,8 @@ class Core(object):
         self.sig_dict = {}
         self.prev_dict = {}
         self.thr_list = []
-        self.prev_time = -1
+        self.prev_time = None
+        self.l_rate = None
         self.state = ''
         self.prev_reflex = 0
 
@@ -53,6 +54,7 @@ class Core(object):
 
     def vais_cb(self, data):                                #read state from param
         self.state = data.state
+        self.l_rate = data.l_rate
         self.thr_list = [data.thr_list[0], data.thr_list[1], data.thr_list[2]]
 
     def main(self, time, pos_dict):
@@ -66,7 +68,7 @@ class Core(object):
             if self.prev_time:
                 diff = self.diff_time(time)
                 date_time = datetime.datetime.fromtimestamp(time.to_sec())
-                result = self.learn.ico(date_time, diff, self.state, self.sig_dict, self.prev_dict)
+                result = self.learn.ico(date_time, diff, self.state, self.l_rate, self.sig_dict, self.prev_dict)
 
                 #On screen for debug
                 print(result)
@@ -85,7 +87,7 @@ class Core(object):
 
     def diff_time(self, time):
         #Later time step
-        if self.prev_time != -1:
+        if self.prev_time is not None:
             diff_time = self.signal.truncated((time-self.prev_time).to_sec())
             #After finished, store current time as a previous time step for the next iteration
             self.prev_time = time

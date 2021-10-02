@@ -1,10 +1,11 @@
 Header header
 string state
+float32 e_object
+float32 p_object
+float32 r_object
+float32 l_rate
 float32 target_x
 float32 target_y
 float32 target_z
 float32 max_linear
 float32 max_angular
-float32 e_object
-float32 p_object
-float32 r_object

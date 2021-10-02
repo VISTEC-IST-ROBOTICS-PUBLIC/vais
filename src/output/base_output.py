@@ -6,6 +6,7 @@
 
 from movo_msgs.msg import *
 from geometry_msgs.msg import Twist
+from vais_msgs.msg import *
 from std_msgs.msg import Float32, Float64, Bool, String
 from nav_msgs.msg import Odometry
 import message_filters
@@ -14,7 +15,7 @@ import sys
 import math
 import numpy as np
 
-class BaseOpClass(object):
+class MOVO_output(object):
   def __init__(self):
 
     ##Twist message
@@ -42,7 +43,7 @@ class BaseOpClass(object):
     self.init = None
 
     #Target example
-    self.tar_odom = [5, 5 ,0]
+    self.tar_odom = [5, 0 ,0]
 
     #Deceleration factor
     self.decel_factor = 1/10
@@ -119,12 +120,13 @@ class BaseOpClass(object):
     #3. Incase of continuous route, we might need to reset a reference onwards
     #4. speed and position matters
     
-    if diff >=0:
+    if diff >=0: 
       speed = (self.max_speed-(self.max_speed*self.ico_out))*self.decel_rate(diff, self.max_speed)
     else:
       print("Done")
       speed = 0
-    self.publish_output(speed)
+    print(speed)
+    #self.publish_output(speed)
 
   #Method to publish output
   def publish_output(self,drive):
@@ -163,7 +165,7 @@ class BaseOpClass(object):
     euc_result = math.sqrt(square_x+square_y)
     return euc_result
 
-  def quaterniontoeuler(self, x, y, z, w):
+  def quaternion_to_euler(self, x, y, z, w):
     t0 = +2.0 * (w * x + y * z)
     t1 = +1.0 - 2.0 * (x * x + y * y)
     X = math.degrees(math.atan2(t0, t1))
@@ -187,14 +189,6 @@ class BaseOpClass(object):
       angle = 360+ angle
       return angle
     pass
-
-  def target_distance(self, ref_dist, tar_dist):
-    result = ref_dist + tar_dist
-    return result
-
-  def target_angle(self, ref_angle,tar_angle):
-    result = ref_angle+tar_angle
-    return result
 
   def init_cb(self, signal):
     self.init = signal.data

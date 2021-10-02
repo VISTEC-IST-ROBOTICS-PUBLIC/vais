@@ -1,5 +1,6 @@
 import rospy
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
+from vais_msgs.msg import vais
 from std_msgs.msg import Bool, Float32, String
 from signals import ICO_Signal
 from learn import Learning
@@ -32,6 +33,7 @@ class Core(object):
         #Sub topics
         rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self.alvar_cb, queue_size=1)
         rospy.Subscriber('/signal/init', Bool, self.init_cb, queue_size =1)
+        rospy.Subscriber('/vais/info', vais , self.vais_cb, queue_size=1)
         rospy.Subscriber('/robot/state', String, self.state_cb, queue_size=1)
 
     def alvar_cb(self, alvar_pt):                           #alvar always keep spinning its callback
@@ -54,7 +56,7 @@ class Core(object):
         self.init = signal.data
 
     def state_cb(self, signal):                              #initial signal to trigger a reference capture                         
-        self.signal = signal.data
+        self.state = signal.data
 
     def main(self, time, pos_dict):
         #initial state, robot satetand still with multiple items in the tray.
@@ -69,6 +71,7 @@ class Core(object):
                 date_time = datetime.datetime.fromtimestamp(time.to_sec())
                 result = self.learn.ico(date_time, diff, self.state, self.sig_dict, self.prev_dict)
                 #publish to drive
+                print(result)
                 self.ico_out.publish(result)
  
             else:
@@ -77,8 +80,9 @@ class Core(object):
             self.prev_dict=self.sig_dict.copy()
 
         else:
-            print('Signal Dropped: Not enough information (Please Check REF/POS')
+            print('Signal Dropped: Not enough information (Please Check REF/POS or Init signal)')
 
+    #Time interval (current time and previous time step)
     def diff_time(self, time):
         if self.prev_time != -1:
 
@@ -103,6 +107,10 @@ class Core(object):
     def signal_generation(self, ref, pos):  
         for key in ref: 
             if key in pos:
+                print(key)
+                print(pos)
+                print(type(ref[key]))
+                print(type(pos[key]))
                 result = self.signal.obj_signal(ref[key], pos[key])   #Use position list only
                 self.sig_dict[key] = result
                 if self.prev_reflex == 1:
@@ -117,9 +125,6 @@ class Core(object):
                 self.sig_dict[key] = [0,1]
                 time.sleep(30)
                 sys.exit()
-        
-        #Debugging purpose
-        #print(self.sig_dict)
 
     if __name__ == "__main__":
 	    print ('dummy main')

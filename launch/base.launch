@@ -7,7 +7,7 @@
                env-loader="/home/movo/env.sh" default="true" unless="$(arg local)"/>
 
 
-    <node name="ICO_Base_Output" pkg="output" type="baseop_launch.py" output="screen">	</node>
+    <node name="ICO_Base_Output" pkg="vais" type="baseop_launch.py" output="screen">	</node>
 	
 </launch>
 

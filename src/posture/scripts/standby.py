@@ -30,7 +30,7 @@ if __name__ == "__main__":
     movo_torsor.add_point(current_torso_pos, 0.0)
     # movo_torsor.add_point([0.45], 4)
     movo_torsor.add_point([0.25], 6)     #This is updated as a base installation
-    movo_torsor.add_point([0.55], 12)   #reach 0.1 in 12s
+    movo_torsor.add_point([0.55], 12)    
     movo_torsor.start()
     movo_torsor.wait(5.0)
     print("MOVO's body adjustment is done")

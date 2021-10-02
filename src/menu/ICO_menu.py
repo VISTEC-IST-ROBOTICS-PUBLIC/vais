@@ -7,6 +7,7 @@ from vais.msg import vais_param
 import termios
 import tty
 import select
+import time
 
 class Menu(object):
     def __init__(self):
@@ -24,263 +25,240 @@ class Menu(object):
         #references
         self.vais_pub = rospy.Publisher('/data/vais_param', vais_param, queue_size=1)   #All parameters are bundled in custom message and sent.
 
-  def default_value(self):
-      state = 'Linear'
-      e_object = 3
-      p_object = 6
-float32 p_object
-float32 r_object
-float32 l_rate
-float32 goal_x
-float32 goal_y
-float32 goal_z
-float32 max_linear
-float32 max_angular
-float32 decel_factor
+    def default_value(self):
+        msg = vais_param()
+        msg.state = 'Linear'
+        msg.e_object = 3
+        msg.p_object = 6
+        msg.r_object = 9
+        msg.l_rate = 0.05
+        msg.goal_x = 5
+        msg.goal_y =0
+        msg.goal_z = 90
+        msg.max_linear = 1.5
+        msg.max_angular = 2.35
+        msg.decel_factor = 1/10
+        self.vais_pub.publish(msg)
 
-  def default_load(self):
-
-      #First load to store the robot learning state
-      input_state = """
-      Please define an input command:
-      1: Load default
-      2: Manual input
-      """
-      input_state_chk = False
-      while not input_state_chk:
-
-        try:
-
-          if sys.version_info[0] < 3:
-            rcv_input = int(raw_input(input_state))
-          else:
-            rcv_input = int(input(input_state))
-
-          if rcv_input == 1:
-            print('Load a default parameters')
+    def input_ver(self, sys_version, st_value):
+        statement = self.statement(st_value)
+        #Python v 2.7
+        if sys_version < 3:
+            rcv_input = int(raw_input(statement))
             return rcv_input
-          elif rcv_input == 2:
-            print('Manual input')
-            return rcv_input
-          else: 
-            print('Invalid input. Try again:')
-
-        except ValueError:
-          print('Please enter only value. Try again: ')
-
-  def max_speed(self):
-    input_obj_chk = False
-    while not input_obj_chk:
-      try:
-        #Note for Python2. When you input nothing and press Enter. It is expected to have Syntax Error.
-        if sys.version_info[0] < 3:
-          lin_input = float(raw_input("Please enter a linear maximum speed: "))
-          ang_input = float(raw_input("Please enter an angular maximum speed: "))
+        #Python v 3.x+
         else:
-          lin_input = float(input("Please enter a linear maximum speed: "))
-          ang_input = float(input("Please enter an angular maximum speed: "))
-        
-        return lin_input, ang_input
-      
-      except ValueError:
-        print('Please enter only value. Try again: ')
+            rcv_input = int(input(statement))      
+            return rcv_input  
+            
+    def statement(self, value):
+        if value == 0:
+            input_state = ""
+        if value == 1:
+            input_state = """
+        Please define an input command:
+        1: Load default
+        2: Manual input
+        """
+        elif value ==2:
+            input_state = """
+        Please define an input command:
+        1: Linear
+        2: Angular
+        """
+        elif value == 3:
+            input_state = "Please enter an exemption range: "
+        elif value == 4:
+            input_state = "Please enter a predictive range: "
+        elif value == 5:
+            input_state = "Please enter a reflexive range: "
+        elif value == 6:
+            input_state = "Please enter a linear goal distance (forward movement): "
+        elif value == 7:
+            input_state = "Please enter a linear goal distance (perpendicular movement): "
+        elif value == 8:
+            input_state = "Please enter a linear angular goal (degree): "
+        elif value == 9:
+            input_state = "Please enter a learning rate: "
+        elif value == 10:
+            input_state = "Please enter a linear maximum speed: "
+        elif value == 11:
+            input_state = "Please enter a angular maximum speed: "
+        elif value == 12:
+            input_state = "Please enter a learning rate: "
 
-  def state_cmd(self):
-    input_state = """
-    Please define an input command:
-    1: Linear
-    2: Angular
-    """
-    input_state_chk = False
-    while not input_state_chk:
-      try:
-        if sys.version_info[0] < 3:
-          rcv_input = int(raw_input(input_state))
-        else:
-          rcv_input = int(input(input_state))
+        return input_state
 
-        if rcv_input == 1:
-          print('State_cmd: Linear')
-          return 'Linear'
-        elif rcv_input == 2:
-          print('State_cmd: Angular')
-          return 'Angular'
-        else:
-          print('Invalid input. Try again:')
+    def input_selection(self):
+        #First load to store the robot learning state
+        input_state_chk = False
+        while not input_state_chk:
+            try:
+                rcv_input = self.input_ver(sys.version_info[0], 1)
+                if rcv_input == 1:
+                    print('Load a default parameters')
+                    #Automatically publish to vais_parameters
+                    self.default_value()
+                    return rcv_input
+                elif rcv_input == 2:
+                    print('Manual input')
+                    self.manual_input()
+                    return rcv_input
+                else: 
+                    print('Invalid input. Try again:')
+            except ValueError:
+                print('Please enter only value. Try again: ')
 
-      except ValueError:
-        print('Please enter only value. Try again: ')
+    def manual_input(self):
+        input_state_chk = False
+        msg = vais_param()
+        while not input_state_chk:
+            try:
+                rcv_input = self.input_ver(sys.version_info[0], 2)
+                if rcv_input == 1:
+                    msg.state = 'Linear'
+                elif rcv_input == 2:
+                    msg.state = 'Angular'
+                print(
+                    '''These following input is set for a sensitivity area of the object detection (According to a camera)
+                    e_thr is a safety area where we define an acceptance range that object can deviate.
+                    p_thr is a preemptive area where the predictive signal is notice signal where the object pass beyond the exemption area.
+                    r_thr is a limit area to generate a reflexive signal that is exceeded our safety length.
+                    Noted that the deviation is occcured in 3D space.
+                    ''')
+                msg.e_object = self.input_ver(sys.version_info[0], 3)
+                msg.p_object = self.input_ver(sys.version_info[0], 4)
+                msg.r_object = self.input_ver(sys.version_info[0], 5)
+                print(
+                    '''These following input is a pre-defined goal in translational movement and rotational movement.
+                    ''')
+                msg.goal_x = self.input_ver(sys.version_info[0], 6)
+                msg.goal_y = self.input_ver(sys.version_info[0], 7)
+                msg.goal_z = self.input_ver(sys.version_info[0], 8)
+                print(
+                    '''This setting is used for a learning rate
+                    ''')
+                msg.l_rate = self.input_ver(sys.version_info[0], 9)
+                print(
+                    '''These following input is a maximum speed in translational movement and rotational movement.
+                    ''')               
+                msg.max_linear = self.input_ver(sys.version_info[0], 10)
+                msg.max_angular = self.input_ver(sys.version_info[0], 11)
+                print(
+                    '''This setting is to modify speed when the robot pass the certain point
+                    ''')                
+                msg.decel_factor = self.input_ver(sys.version_info[0], 12)
+                self.vais_pub.publish(msg)
+            except ValueError:
+                print('Please enter only value. Try again: ')
 
-  def l_rate(self):
-
-    input_mode_chk = False
-    while not input_mode_chk:
-      print(
-        '''This setting is used for a learning rate
-        ''')
-      try:
-        if sys.version_info[0] < 3:
-          lrate_input = float(raw_input("Please put a learning rate: "))
-          print("Learning rate is: ", lrate_input)
-          return lrate_input
-        else:
-          lrate_input = float(raw_input("Please put a learning rate: "))
-          print("Learning rate is: ", lrate_input)
-          return lrate_input
-
-      except ValueError:
-        print('Please enter only value. Try again: ')
-
-  def obj_sensitivity(self):
-
-    input_mode_chk = False
-    while not input_mode_chk:
-      print(
-        '''This input is set for a sensitivity area of the object detection (According to a camera)
-        p_thr is a safety area where we define an acceptance range that object can deviate.
-        r_thr is a limit area to generate a reflexive signal that is exceeded our safety length
-        Noted that the deviation is occcured in 3D space.
-        ''')
-      try:
-        if sys.version_info[0] < 3:
-          pthr_input = float(raw_input("Please put a safety area threshold: "))
-          print("Safety area Threshold is: ", pthr_input)
-          rthr_input = float(raw_input("Please put a reflexive threshold: "))
-          print("Reflexive area Threshold is: ", rthr_input)
-          return pthr_input, rthr_input
-        else:
-          pthr_input = float(input("Please put a safe area threshold"))
-          print("Safety area Threshold is: ", pthr_input)
-          rthr_input = float(input("Please put a reflexive threshold"))
-          print("Reflexive area Threshold is: ", rthr_input)
-          return pthr_input, rthr_input
-
-      except ValueError:
-        print('Please enter only value. Try again: ')
-
-  def init(self):
-    self.init_pub.publish(True)
-
-  def shutdown(self):
-    #if this invokes, trigger shutdown signal to everyone.
-    self.shutdown_pub.publish(True)
-
-  def reset(self):
-    self.reset.publish(True)
-
-  def enter(self):
-    if sys.version_info[0] < 3:
-      raw_input("Press Enter to continue ")
-    else:
-      input("Press Enter to continue")
-
-  ##launcher have to trigger here
-  def learn(self):
-
-    self.init_pub.publish(False)
-    self.reference_pub.publish(False)
-    self.move_pub.publish(False)
-
-    #Default value
-    load = self.default_load()
-
-    if load == 1:
-      lin = 1.5
-      ang = 2.35
-      p_thr = 4
-      r_thr = 8
-      l_rate = 0.05
-    else:
-      lin, ang = self.max_speed()
-      p_thr,r_thr = self.obj_sensitivity()
-      l_rate = self.l_rate()
-
-    #Ask for a learning state
-    state = self.state_cmd()
-
-    print("Press enter to continue")
-
-    #Press detection
-    while(True):
-
-      msg = '''
-        Option: 
-        1. Press I to Initiate
-        2. Press S to Shutdown
-        3. Press P to Pause
-        4. Press C to continue
-        (To do later) 
-        5. Press R to Reset 
-      '''
-      print(msg)
-
-      key = self.getKey()
-      if key == 'i':
-        print("Initiate all nodes to be active")
-        #Initiate signal to all nodes
+    def init(self):
         self.init_pub.publish(True)
 
-        #publish values after initiate first
-        self.state_pub.publish(state)
-        self.l_rate_pub.publish(l_rate)
-        self.p_thr_pub.publish(p_thr)
-        self.r_thr_pub.publish(r_thr)
-        self.linmax_pub.publish(lin)
-        self.angmax_pub.publish(ang)
+    def shutdown(self):
+        #if this invokes, trigger shutdown signal to everyone.
+        self.shutdown_pub.publish(True)
 
-        print("Press enter to trigger a reference point")
-        self.enter()
-        self.reference_pub.publish(True)
-
-        print("Press enter to trigger a robot start signal")
-        self.enter()
-        self.move = True
-        self.move_pub.publish(self.move)
-
-        print("Press enter to trigger a robot stop signal")
-        self.enter()
-        self.move = False
-        self.move_pub.publish(self.move)
-        print("One second Cooldown")
-        rospy.sleep(1)
-        print('reset init to False state')
-        self.init_pub.publish(False)
-
-        print("Press enter back a menu section")
-        self.enter()
-
-      elif key == 's':
-        print("shutdown all related nodes") 
-        self.init_pub.publish(False)
-        self.reference_pub.publish(False)
-        self.move_pub.publish(False)
-        self.shutdown()
-        rospy.signal_shutdown("Shutdown all nodes") 
-        break
-
-      elif key == 'p':
-        print("Pause")
-        self.init_pub.publish(False)
-      
-      elif key== 'c':
-        print("Continue")
-        self.init_pub.publish(True)
-
-      #Still finding the way to reset nodes
-      elif key == 'r':
-        print("Reset all nodes")
+    def reset(self):
         self.reset.publish(True)
+
+    ##launcher have to trigger here
+    def menu_learn(self):
+
+        #First, rest all topics to be False state
         self.init_pub.publish(False)
-        self.reset.publish(False)
+        self.move_pub.publish(False)
+
+        #Second, option between load default and manual
+        self.input_selection()
         
-  def getKey(self):
-      #Launch termios setting
-      settings = termios.tcgetattr(sys.stdin)
-      tty.setraw(sys.stdin.fileno())
-      select.select([sys.stdin], [], [], 0)
-      key = sys.stdin.read(1)
-      termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
-      return key
+        #Last, option to control robot
+        self.option()
+
+    def option(self):
+        #Press detection
+        while(True):
+
+            msg = '''
+                Option: 
+                1. Press I to Initiate
+                2. Press P to Pause
+                3. Press R to Resume
+                4. Press S to Shutdown
+                5. Press ESC to exit
+            '''
+            print(msg)
+
+            key = self.getKey()
+            if key == 'i':
+                print("Initiate all nodes to be active, capture all references")
+                #Initiate signal to all nodes
+                self.init_pub.publish(True)
+
+                print("Press enter to trigger a robot start signal")
+                self.press_enter()
+                self.move_pub.publish(True)
+
+                print("Press enter to trigger a robot stop signal")
+                self.press_enter()
+                self.move_pub.publish(False)
+                print("One second Cooldown")
+                rospy.sleep(1)
+                print('reset init to False state')
+                self.init_pub.publish(False)
+
+                print("Press enter to back to a menu section")
+                self.press_enter()
+
+            elif key == 'p':
+                print("Pause all related nodes") 
+                self.init_pub.publish(False)
+                self.move_pub.publish(False)
+                print("Press enter to back to a menu section")
+                self.press_enter()
+
+            elif key == 'r':
+                print("Resume all related nodes") 
+                self.init_pub.publish(True)
+                self.move_pub.publish(True)
+                print("Press enter to back to a menu section")
+                self.press_enter()                
+
+            elif key == 's':
+                print("Shutdown all related nodes") 
+                self.init_pub.publish(False)
+                self.move_pub.publish(False)
+                self.shutdown()
+                rospy.signal_shutdown("Shutdown all nodes") 
+                break
+
+            elif key =='\x1b':                      #ESC
+                self.init_pub.publish(False)
+                self.move_pub.publish(False)
+                self.shutdown()
+                rospy.signal_shutdown("Exit")
+                sys.exit()
+
+    def press_enter(self):
+        #Python v 2.7
+        if sys.version_info[0] < 3:
+            text = raw_input("")
+        #Python v 3.x+
+        else:
+            text = input("")      
+            
+        if text == '':
+            pass
+
+
+    def getKey(self):
+        #Launch termios setting
+        settings = termios.tcgetattr(sys.stdin)
+        tty.setraw(sys.stdin.fileno())
+        select.select([sys.stdin], [], [], 0)
+        key = sys.stdin.read(1)
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
+        return key
 
 #Test area
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ if __name__ == '__main__':
    rospy.init_node('ICO_menu')
    try:
         ICO_menu=Menu()
-        ICO_menu.learn()
+        ICO_menu.menu_learn()
         rospy.spin()
 
    except rospy.ROSInterruptException:

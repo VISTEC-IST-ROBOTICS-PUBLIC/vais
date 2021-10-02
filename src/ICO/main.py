@@ -19,7 +19,8 @@ class Core(object):
         self.thr_list = []
         self.prev_time = None
         self.l_rate = None
-        self.state = ''
+        self.state = None
+        self.init = None
         self.prev_reflex = 0
 
         #Instantiation
@@ -35,6 +36,7 @@ class Core(object):
         #Sub topics
         rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self.alvar_cb, queue_size=1)
         rospy.Subscriber('/signal/init', Bool, self.init_cb, queue_size =1)
+        rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size =1)
         rospy.Subscriber('/data/vais_param', vais_param , self.vais_cb, queue_size=1)
 
     def alvar_cb(self, alvar_pt):                           #alvar always keep spinning its callback
@@ -56,6 +58,11 @@ class Core(object):
         self.state = data.state
         self.l_rate = data.l_rate
         self.thr_list = [data.thr_list[0], data.thr_list[1], data.thr_list[2]]
+
+    def shutdown_cb(self, signal):
+        #Signal to shutdown this from input node.
+        if signal.data == True:
+            rospy.signal_shutdown("Shutdown signal is received, turn this node off")
 
     def main(self, time, pos_dict):
         #Use menu node to trigger a save of reference position

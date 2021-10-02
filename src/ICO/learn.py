@@ -8,7 +8,6 @@ class Learning(object):
         self.signal = ICO_Signal()
         self.res_dict = {}              #result of each object in dictionary
 
-
     def ico(self, time, diff_time, state, l_rate , sig_dict, prev_dict):
         if prev_dict:
             #Retrieve each object ID in dictionary

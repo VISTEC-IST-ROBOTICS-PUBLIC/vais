@@ -3,38 +3,40 @@
 import rospy
 import sys
 from std_msgs.msg import Bool, String, Float32, Int32
+from vais.msg import vais_param
 import termios
 import tty
 import select
 
 class Menu(object):
-  def __init__(self):
+    def __init__(self):
+        #Parameters
+        self.move = False
 
-    #Parameters
-    self.move = False
+        #Publishers
+        #Control signals
+        self.init_pub = rospy.Publisher('/signal/init', Bool, queue_size = 1)           #if init is True, learning continues, else learning stops
+        self.shutdown_pub = rospy.Publisher('/signal/shutdown', Bool, queue_size = 1)   #Once this node is triggered, all related nodes are closed
 
-    #Publishers
-    #Control signals
-    self.init_pub = rospy.Publisher('/signal/init', Bool, queue_size = 1)           #if init is True, learning continues, else learning stops
-    self.shutdown_pub = rospy.Publisher('/signal/shutdown', Bool, queue_size = 1)   #Once this node is triggered, all related nodes are closed
-    self.reset = rospy.Publisher('/signal/reset', Bool, queue_size = 1)             #Need a further investigation to reset/respawn a node
+        #robot start/stop signals
+        self.move_pub = rospy.Publisher('/robot/move', Bool, queue_size = 1)            #Trigger signal to allows a robot to move
 
-    #robot start/stop signals
-    self.move_pub = rospy.Publisher('/robot/move', Bool, queue_size = 1)            #Trigger signal to allows a robot to move
+        #references
+        self.vais_pub = rospy.Publisher('/data/vais_param', vais_param, queue_size=1)   #All parameters are bundled in custom message and sent.
 
-    #references
-    self.state_pub = rospy.Publisher('/robot/state', String, queue_size = 1)
-    self.l_rate_pub = rospy.Publisher('/data/l_rate', Float32, queue_size = 1)
-
-    #BaseOp reference
-    self.linmax_pub = rospy.Publisher('/data/lin_max', Float32, queue_size = 1)
-    self.angmax_pub = rospy.Publisher('/data/ang_max', Float32, queue_size = 1)
-
-    #parameters for ICO signal generator
-    self.reference_pub = rospy.Publisher('/signal/reference', Bool, queue_size = 1)  
-    self.p_thr_pub = rospy.Publisher('/data/p_thr', Float32, queue_size = 1)
-    self.r_thr_pub = rospy.Publisher('/data/r_thr', Float32, queue_size = 1)
-
+  def default_value(self):
+      state = 'Linear'
+      e_object = 3
+      p_object = 6
+float32 p_object
+float32 r_object
+float32 l_rate
+float32 goal_x
+float32 goal_y
+float32 goal_z
+float32 max_linear
+float32 max_angular
+float32 decel_factor
 
   def default_load(self):
 

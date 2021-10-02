@@ -26,13 +26,13 @@ class ICO_Signal(object):
         nm = (input - min)/(max - min)
         return float(nm)
 
-    #LPF (should be in ICO?)
-    def LowPassFilter(self, sig, sig_prev):
-        #Constants
-        sig_factor = 0.7
-        sig_prev_factor = 0.3
-        new_sig = (sig_factor * sig) + (sig_prev_factor * sig_prev)
-
+    #LPF (should be in ICO?)def __init__(self):
+        #default initial threshold
+        self.e_obj_thr = 3
+        self.p_obj_thr = 6
+        self.r_obj_thr = 9
+        self.p_dist_thr = 0
+        self.r_dist_thr = 1
         return new_sig
 
     def euclidean_dist(self, ref_list, cur_list):
@@ -50,21 +50,26 @@ class ICO_Signal(object):
         euc_result = self.truncated(math.sqrt(square_x+square_y+square_z))
         return euc_result
 
-    def obj_calculation(self, ed):        #format (id: stamp, p_signal, r_signal)    
+    def obj_calculation(self, ed, thr_list):        #format (id: stamp, p_signal, r_signal)    
+
+        #threshold for exemption, predictive, reflexive area
+        e_thr = thr_list[0]
+        p_thr = thr_list[1]
+        r_thr = thr_list[2]
 
         #case lies within exemption range
         if ed < self.e_obj_thr:
             return 0.0, 0.0
 
         #case of moving in a predictive area
-        elif ed >= self.e_obj_thr and ed < self.p_obj_thr:
-            nm = self.normalization(ed, self.e_obj_thr, self.p_obj_thr)
+        elif ed >= e_thr and ed < p_thr:
+            nm = self.normalization(ed, e_thr, p_thr)
             nm_trunc = self.truncated(nm)
             return nm_trunc, 0.0
 
         #case of moving in a reflexive area
-        elif ed > self.p_obj_thr and ed < self.r_obj_thr:
-            nm = self.normalization(ed, self.p_obj_thr, self.r_obj_thr)
+        elif ed >= p_thr and ed < self.r_thr:
+            nm = self.normalization(ed, p_thr, r_thr)
             nm_trunc = self.truncated(nm)
             return 1.0, nm_trunc
 
@@ -73,9 +78,9 @@ class ICO_Signal(object):
             return 1.0, 1.0
 
     #main
-    def obj_signal(self, ref_list, cur_list):
+    def obj_signal(self, ref_list, cur_list, thr_list):
         euclidean = self.euclidean_dist(ref_list, cur_list)
-        predict, reflex = self.obj_calculation(euclidean)
+        predict, reflex = self.obj_calculation(euclidean, thr_list)
         print("PREDICT: ", predict)
         print("REFLEX: ", reflex)
         return [predict, reflex]

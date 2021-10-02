@@ -6,7 +6,7 @@
 
 from movo_msgs.msg import *
 from geometry_msgs.msg import Twist
-from vais_msgs.msg import *
+from vais.msg import vais_param
 from std_msgs.msg import Float32, Float64, Bool, String
 from nav_msgs.msg import Odometry
 import message_filters
@@ -63,9 +63,8 @@ class MOVO_output(object):
     rospy.Subscriber('/robot/state', String, self.state_cb, queue_size = 1)
     rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
 
-    #Linear/Angular maximum speed subs
-    rospy.Subscriber('/data/lin_max', Float32, self.lin_cb, queue_size = 1)
-    rospy.Subscriber('/data/ang_max', Float32, self.ang_cb, queue_size = 1)
+    #VAIS param sub
+    rospy.Subscriber('/data/vais_param', vais_param, self.vais_cb, queue_size=1)
 
     #Linear/Angular maximum distance subs
 

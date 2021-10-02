@@ -5,3 +5,6 @@ float32 target_y
 float32 target_z
 float32 max_linear
 float32 max_angular
+float32 e_object
+float32 p_object
+float32 r_object

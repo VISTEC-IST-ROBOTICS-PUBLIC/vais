@@ -4,12 +4,7 @@ import numpy as np
 class ICO_Signal(object):
     
     def __init__(self):
-        #default initial threshold
-        self.e_obj_thr = 3
-        self.p_obj_thr = 6
-        self.r_obj_thr = 9
-        self.p_dist_thr = 0
-        self.r_dist_thr = 1
+        pass
 
     #Scale points from ALVAR (m to cm)
     def alvar_scale(self, point):       
@@ -26,15 +21,6 @@ class ICO_Signal(object):
         nm = (input - min)/(max - min)
         return float(nm)
 
-    #LPF (should be in ICO?)def __init__(self):
-        #default initial threshold
-        self.e_obj_thr = 3
-        self.p_obj_thr = 6
-        self.r_obj_thr = 9
-        self.p_dist_thr = 0
-        self.r_dist_thr = 1
-        return new_sig
-
     def euclidean_dist(self, ref_list, cur_list):
         #First, find the different
         diff_x = self.truncated(self.alvar_scale(ref_list[0])-self.alvar_scale(cur_list[0]))
@@ -50,7 +36,7 @@ class ICO_Signal(object):
         euc_result = self.truncated(math.sqrt(square_x+square_y+square_z))
         return euc_result
 
-    def obj_calculation(self, ed, thr_list):        #format (id: stamp, p_signal, r_signal)    
+    def obj_calculation(self, ed, thr_list):          
 
         #threshold for exemption, predictive, reflexive area
         e_thr = thr_list[0]
@@ -68,7 +54,7 @@ class ICO_Signal(object):
             return nm_trunc, 0.0
 
         #case of moving in a reflexive area
-        elif ed >= p_thr and ed < self.r_thr:
+        elif ed >= p_thr and ed < r_thr:
             nm = self.normalization(ed, p_thr, r_thr)
             nm_trunc = self.truncated(nm)
             return 1.0, nm_trunc
@@ -81,9 +67,6 @@ class ICO_Signal(object):
     def obj_signal(self, ref_list, cur_list, thr_list):
         euclidean = self.euclidean_dist(ref_list, cur_list)
         predict, reflex = self.obj_calculation(euclidean, thr_list)
-        print("PREDICT: ", predict)
-        print("REFLEX: ", reflex)
+        #print("PREDICT Signal: ", predict)
+        #print("REFLEX Signal: ", reflex)
         return [predict, reflex]
-
-    if __name__ == "__main__":
-	    print ('dummy main')

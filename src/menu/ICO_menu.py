@@ -41,19 +41,24 @@ class Menu(object):
         self.vais_pub.publish(msg)
 
     def input_ver(self, sys_version, st_value):
-        statement = self.statement(st_value)
-        #Python v 2.7
-        if sys_version < 3:
-            rcv_input = int(raw_input(statement))
-            return rcv_input
-        #Python v 3.x+
-        else:
-            rcv_input = int(input(statement))      
-            return rcv_input  
-            
+        #First load to store the robot learning state
+        input_state_chk = False
+        while not input_state_chk:
+            try:
+                statement = self.statement(st_value)
+                #Python v 2.7
+                if sys_version < 3:
+                    rcv_input = int(raw_input(statement))
+                    return rcv_input
+                #Python v 3.x+
+                else:
+                    rcv_input = int(input(statement))      
+                    return rcv_input  
+
+            except ValueError:
+                print('Please enter only value. Try again: ')
+
     def statement(self, value):
-        if value == 0:
-            input_state = ""
         if value == 1:
             input_state = """
         Please define an input command:
@@ -90,67 +95,58 @@ class Menu(object):
         return input_state
 
     def input_selection(self):
-        #First load to store the robot learning state
-        input_state_chk = False
-        while not input_state_chk:
-            try:
-                rcv_input = self.input_ver(sys.version_info[0], 1)
-                if rcv_input == 1:
-                    print('Load a default parameters')
-                    #Automatically publish to vais_parameters
-                    self.default_value()
-                    return rcv_input
-                elif rcv_input == 2:
-                    print('Manual input')
-                    self.manual_input()
-                    return rcv_input
-                else: 
-                    print('Invalid input. Try again:')
-            except ValueError:
-                print('Please enter only value. Try again: ')
+        rcv_input = self.input_ver(sys.version_info[0], 1)
+        if rcv_input == 1:
+            print('Load a default parameters')
+            #Automatically publish to vais_parameters
+            self.default_value()
+            return rcv_input
+        elif rcv_input == 2:
+            print('Manual input')
+            self.manual_input()
+            return rcv_input
+        else: 
+            print('Invalid input. Try again:')
+
 
     def manual_input(self):
-        input_state_chk = False
         msg = vais_param()
-        while not input_state_chk:
-            try:
-                rcv_input = self.input_ver(sys.version_info[0], 2)
-                if rcv_input == 1:
-                    msg.state = 'Linear'
-                elif rcv_input == 2:
-                    msg.state = 'Angular'
-                print(
-                    '''These following input is set for a sensitivity area of the object detection (According to a camera)
-                    e_thr is a safety area where we define an acceptance range that object can deviate.
-                    p_thr is a preemptive area where the predictive signal is notice signal where the object pass beyond the exemption area.
-                    r_thr is a limit area to generate a reflexive signal that is exceeded our safety length.
-                    Noted that the deviation is occcured in 3D space.
-                    ''')
-                msg.e_object = self.input_ver(sys.version_info[0], 3)
-                msg.p_object = self.input_ver(sys.version_info[0], 4)
-                msg.r_object = self.input_ver(sys.version_info[0], 5)
-                print(
-                    '''These following input is a pre-defined goal in translational movement and rotational movement.
-                    ''')
-                msg.goal_x = self.input_ver(sys.version_info[0], 6)
-                msg.goal_y = self.input_ver(sys.version_info[0], 7)
-                msg.goal_z = self.input_ver(sys.version_info[0], 8)
-                print(
-                    '''This setting is used for a learning rate
-                    ''')
-                msg.l_rate = self.input_ver(sys.version_info[0], 9)
-                print(
-                    '''These following input is a maximum speed in translational movement and rotational movement.
-                    ''')               
-                msg.max_linear = self.input_ver(sys.version_info[0], 10)
-                msg.max_angular = self.input_ver(sys.version_info[0], 11)
-                print(
-                    '''This setting is to modify speed when the robot pass the certain point
-                    ''')                
-                msg.decel_factor = self.input_ver(sys.version_info[0], 12)
-                self.vais_pub.publish(msg)
-            except ValueError:
-                print('Please enter only value. Try again: ')
+        rcv_input = self.input_ver(sys.version_info[0], 2)
+        if rcv_input == 1:
+            msg.state = 'Linear'
+        elif rcv_input == 2:
+            msg.state = 'Angular'
+        print(
+            '''These following input is set for a sensitivity area of the object detection (According to a camera)
+            e_thr is a safety area where we define an acceptance range that object can deviate.
+            p_thr is a preemptive area where the predictive signal is notice signal where the object pass beyond the exemption area.
+            r_thr is a limit area to generate a reflexive signal that is exceeded our safety length.
+            Noted that the deviation is occcured in 3D space.
+            ''')
+        msg.e_object = self.input_ver(sys.version_info[0], 3)
+        msg.p_object = self.input_ver(sys.version_info[0], 4)
+        msg.r_object = self.input_ver(sys.version_info[0], 5)
+        print(
+            '''These following input is a pre-defined goal in translational movement and rotational movement.
+            ''')
+        msg.goal_x = self.input_ver(sys.version_info[0], 6)
+        msg.goal_y = self.input_ver(sys.version_info[0], 7)
+        msg.goal_z = self.input_ver(sys.version_info[0], 8)
+        print(
+            '''This setting is used for a learning rate
+            ''')
+        msg.l_rate = self.input_ver(sys.version_info[0], 9)
+        print(
+            '''These following input is a maximum speed in translational movement and rotational movement.
+            ''')               
+        msg.max_linear = self.input_ver(sys.version_info[0], 10)
+        msg.max_angular = self.input_ver(sys.version_info[0], 11)
+        print(
+            '''This setting is to modify speed when the robot pass the certain point
+            ''')                
+        msg.decel_factor = self.input_ver(sys.version_info[0], 12)
+        self.vais_pub.publish(msg)
+
 
     def init(self):
         self.init_pub.publish(True)

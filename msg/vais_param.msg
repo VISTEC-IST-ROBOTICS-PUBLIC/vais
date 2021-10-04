@@ -7,6 +7,4 @@ float32 l_rate
 float32 goal_x
 float32 goal_y
 float32 goal_z
-float32 max_linear
-float32 max_angular
 float32 decel_factor

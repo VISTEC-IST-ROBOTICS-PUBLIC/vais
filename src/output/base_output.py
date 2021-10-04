@@ -54,8 +54,10 @@ class MOVO_output(object):
         rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size = 1)
         rospy.Subscriber('/robot/move', Bool, self.move_cb, queue_size = 1)
 
+
         #Robot information receievers subs
         rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
+        rospy.Subscriber('/movo/feedback/active_configuration', Configuration, self.aconf_cb, queue_size=1)
 
         #VAIS param sub
         rospy.Subscriber('/data/vais_param', vais_param, self.vais_cb, queue_size=1)
@@ -251,6 +253,11 @@ class MOVO_output(object):
         else:
             #print('Error: Please check robot state')
             pass
+
+    #Active configuration
+    def aconf_cb(self, value):
+        self.lin_speed = value.x_vel_limit_mps
+        self.ang_speed = value.yaw_rate_limit_rps
 
     #slow down when it reaches a certain distance
     def decel_rate(self, diff, max_pos):

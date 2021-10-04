@@ -49,6 +49,7 @@ class demo3(object):
         #Publishers
         #MOVO Physical Output pubs
         self.motion_pub = rospy.Publisher('/movo/cmd_vel', Twist, queue_size=1, latch=False)
+        rospy.Subscriber('/movo/feedback/active_configuration', Configuration, self.aconf_cb, queue_size=1)
 
 
         rospy.Subscriber('/signal/init',Bool, self.init_cb, queue_size = 1)
@@ -200,6 +201,13 @@ class demo3(object):
         self.cur_odom = [pos_x, pos_y, orient_z]
         #print(self.cur_odom)
         self.output_main()
+
+    #Active configuration
+    def aconf_cb(self, value):
+        self.lin_speed = value.x_vel_limit_mps
+        self.ang_speed = value.yaw_rate_limit_rps
+        print(self.lin_speed)
+        print(self.ang_speed)
 
     #slow down when it reaches a certain distance
     def decel_rate(self, diff, max_pos):

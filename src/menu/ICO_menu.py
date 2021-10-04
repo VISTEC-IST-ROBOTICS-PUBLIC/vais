@@ -35,8 +35,6 @@ class Menu(object):
         msg.goal_x = 5
         msg.goal_y =0
         msg.goal_z = 90
-        msg.max_linear = 1.5
-        msg.max_angular = 2.35
         msg.decel_factor = 1/10
         self.vais_pub.publish(msg)
 
@@ -86,10 +84,6 @@ class Menu(object):
         elif value == 9:
             input_state = "Please enter a learning rate: "
         elif value == 10:
-            input_state = "Please enter a linear maximum speed: "
-        elif value == 11:
-            input_state = "Please enter a angular maximum speed: "
-        elif value == 12:
             input_state = "Please enter a learning rate: "
 
         return input_state
@@ -137,16 +131,10 @@ class Menu(object):
             ''')
         msg.l_rate = self.input_ver(sys.version_info[0], 9)
         print(
-            '''These following input is a maximum speed in translational movement and rotational movement.
-            ''')               
-        msg.max_linear = self.input_ver(sys.version_info[0], 10)
-        msg.max_angular = self.input_ver(sys.version_info[0], 11)
-        print(
             '''This setting is to modify speed when the robot pass the certain point
             ''')                
         msg.decel_factor = self.input_ver(sys.version_info[0], 12)
         self.vais_pub.publish(msg)
-
 
     def init(self):
         self.init_pub.publish(True)
@@ -242,10 +230,9 @@ class Menu(object):
         #Python v 3.x+
         else:
             text = input("")      
-            
-        if text == '':
-            pass
 
+        if text == "":
+            pass
 
     def getKey(self):
         #Launch termios setting

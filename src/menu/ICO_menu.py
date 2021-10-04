@@ -2,6 +2,7 @@
 
 import rospy
 import sys
+import dynamic_reconfigure.client
 from std_msgs.msg import Bool, String, Float32, Int32
 from vais.msg import vais_param
 import termios
@@ -57,6 +58,12 @@ class Menu(object):
                 print('Please enter only value. Try again: ')
 
     def statement(self, value):
+        if value == 0:
+            input_state = """
+        Dynamic parameters configuration choices:
+        1: MOVO experiment parameters
+        2: Safety default parameters
+        """
         if value == 1:
             input_state = """
         Please define an input command:
@@ -87,6 +94,18 @@ class Menu(object):
             input_state = "Please enter a learning rate: "
 
         return input_state
+
+    def dynamic_parameters(self):
+        client = dynamic_reconfigure.client.Client("movo/movo_driver", timeout=20)
+  
+        rcv_input = self.input_ver(sys.version_info[0], 1)
+        if (input == 1):
+            #experiment
+            client.update_configuration({"x_vel_limit_mps":1.5, "accel_limit_mps2":1.5, "yaw_rate_limit_rps":2.35, "yaw_accel_limit_rps2": 3.14})
+        else:
+            #safety
+            client.update_configuration({"x_vel_limit_mps":0.5, "accel_limit_mps2":1.0, "yaw_rate_limit_rps":1.0, "yaw_accel_limit_rps2": 1.0})
+            
 
     def input_selection(self):
         rcv_input = self.input_ver(sys.version_info[0], 1)
@@ -153,10 +172,13 @@ class Menu(object):
         self.init_pub.publish(False)
         self.move_pub.publish(False)
 
-        #Second, option between load default and manual
+        #Second, Load dynamic parameters
+        self.dynamic_parameters()
+
+        #Third, Load vais parameters
         self.input_selection()
         
-        #Last, option to control robot
+        #Last, Robot's option
         self.option()
 
     def option(self):
@@ -243,7 +265,4 @@ class Menu(object):
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
         return key
 
-#Test area
-if __name__ == "__main__":
-  pass
 

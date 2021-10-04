@@ -13,7 +13,7 @@ import rospy
 import math
 import numpy as np
 
-class demo3(object):
+class test1(object):
     def __init__(self):
 
         ##Twist message
@@ -101,21 +101,22 @@ class demo3(object):
     def target(self):
 
         diff = self.angle_difference(self.cur_odom, self.tar_odom)
-        """
+        
         if diff >=0: 
             speed = (self.max_speed-(self.max_speed*0))*self.decel_rate(diff, self.max_speed)
+
         else:
             print("Done")
             speed = 0
 
-        if self.direction == "CW":
+        if self.direction == "CCW":
             #self.drive(speed)
             print(speed)
-        elif self.direction == "CCW":
+        elif self.direction == "CW":
             #self.drive(-speed)
             print(-speed)
             #self.drive(speed)
-        """
+        
     #Method to publish output
     def drive(self,drive):
         print("Angular:  ", drive)

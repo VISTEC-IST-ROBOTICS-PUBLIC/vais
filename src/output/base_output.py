@@ -39,12 +39,11 @@ class MOVO_output(object):
         self.ang_speed = None
 
         #Node initialization
-        self.init = None
+        self.init = False
 
         #Deceleration factor
         self.decel_factor = ''
 
-        #Publishers
         #MOVO Physical Output pubs
         self.motion_pub = rospy.Publisher('/movo/cmd_vel', Twist, queue_size=1, latch=False)
         self.init_pub = rospy.Publisher('/signal/init',Bool, queue_size = 1)
@@ -55,27 +54,29 @@ class MOVO_output(object):
         rospy.Subscriber('/robot/move', Bool, self.move_cb, queue_size = 1)
 
 
-        #Robot information receievers subs
+        #MOVO information subs
         rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
         rospy.Subscriber('/movo/feedback/active_configuration', Configuration, self.aconf_cb, queue_size=1)
 
-        #VAIS param sub
+        #VAIS parameters sub
         rospy.Subscriber('/data/vais_param', vais_param, self.vais_cb, queue_size=1)
 
-        #ICO output
+        #ICO output sub
         rospy.Subscriber('/ico/output', Float32, self.ico_cb, queue_size = 1)
 
     #Reference position must be captured via an initialization signal.
-    def capture_ref(self, data):
+    def capture_ref(self):
         if self.init == False:
             #print("Waiting for a reference signal")
             pass
         else:
+
             if self.once == False:
-                self.ref_odom = self.cur_odom.copy()
+                self.ref_odom = self.cur_odom[:]
                 self.once = True
                 print('Reference Odometry is collected')
                 #Once a reference is obtained, generates the target odom.
+                print('Target Odometry is generated')
                 self.target_odom(self.goal_odom)
             else:
                 #print("Reference is already captured")
@@ -85,34 +86,27 @@ class MOVO_output(object):
     def target_odom(self, goal_list):
         
         if (goal_list[2] < 0):
-            self.direction = "CCW"
-        else:
             self.direction = "CW"
+        else:
+            self.direction = "CCW"
 
         pos_x = self.ref_odom[0]+goal_list[0]
         pos_y = self.ref_odom[1]+goal_list[1]
         orient_z = self.ref_odom[2]+goal_list[2]
 
-        if orient_z < 0:
-            return orient_z%360
+        if orient_z < 0 or orient_z > 360:
+            orient_z = orient_z%360
         else:
-            return orient_z
+            orient_z
 
         self.tar_odom = [pos_x, pos_y, orient_z]
 
-    #current odom should be used in a wheel_odom callback
-    def current_odom(self, data):
-        pos_x = data.pose.pose.position.x
-        pos_y = data.pose.pose.position.y
-        orient_z = self.quaternion_to_euler(data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w)
-        self.cur_odom = [pos_x, pos_y, orient_z]
-
     #main
-    def output_main(self, data):
-        self.current_odom(data)                     #current_odom always trigger
-        self.capture_ref(data)                      #trigger once
-        self.target(data.state, data.ico_out)
+    def output_main(self):
+        self.capture_ref()                      #trigger once
+        self.target()
 
+    #Min speed?        
     def target(self, state, ico_out):
 
         #Tracking
@@ -123,30 +117,27 @@ class MOVO_output(object):
         else:
             print("Error please check input state")
 
-        #######this thing has to be looked up
-        #1. difference between distance and angle (might need to use a normalization factor?)
-        #2. speed has to be reduce to minimum value that MOVO can be barely drived and cut off to 0
-        #3. Incase of continuous route, we might need to reset a reference onwards
-        #4. speed and position matters
-        
         if diff >=0: 
             speed = (self.max_speed-(self.max_speed*ico_out))*self.decel_rate(diff, self.max_speed)
+                        
+            #speed cap, else MOVO moves too slow to approach
+            if speed < 0.05:
+                speed = 0.05
+
         else:
             print("Done")
             speed = 0
 
-        if self.direction == "CW":
+
+        if self.direction == "CCW":
             #self.drive(speed)
             print(speed)
-        elif self.direction == "CCW":
+        elif self.direction == "CW":
             #self.drive(-speed)
             print(-speed)
-            #self.drive(speed)
 
     #Method to publish output
     def drive(self,drive):
-
-
         if self.state == 'Linear':
             print("Linear: ", drive)
             self.motion_pub.publish(self.twist_body(drive, 0, 0))
@@ -166,23 +157,25 @@ class MOVO_output(object):
         self.move_cmd.angular.z = angular_z
         return self.move_cmd
 
-    #This method needs to be reconsidered since the calculation is complicated than usual.
     def angle_difference(self, cur_list, tar_list):
-
         diff_z = cur_list[2] - tar_list[2]
 
-        if self.direction == "CCW":
+        if self.direction == "CW":
             if diff_z < 0:
-                return diff_z%360
+                diff_z = diff_z%360
             else:
-                return abs(diff_z)
+                diff_z = abs(diff_z)
 
-        elif self.direction == "CW":
+        elif self.direction == "CCW":
             if diff_z < 0:
-                return abs(diff_z)
+                diff_z = abs(diff_z)
             else:
-                return 360-diff_z
+                diff_z = 360-diff_z
 
+        #print('cur: ', cur_list[2])
+        #print('tar: ', tar_list[2])
+        #print('diff: ',diff_z)
+        
         return diff_z
 
     def linear_euclidean(self, cur_list, tar_list):
@@ -209,17 +202,19 @@ class MOVO_output(object):
         t2 = -1.0 if t2 < -1.0 else t2
         Y = math.degrees(math.asin(t2))
 
-        #Service robot doesn't have roll and pich rotation, Only yaw is active
+        #Service robot doesn't have roll and pitch rotation, Only yaw is active
         t3 = +2.0 * (w * z + x * y)
         t4 = +1.0 - 2.0 * (y * y + z * z)
         Z = math.degrees(math.atan2(t3, t4))
+
+        #print('Q2E Z: ', Z)
 
         #Convert into a range of 0 to 360
         if Z < 0:
             return Z%360
         else:
             return Z
-
+    
     #Use initialization signal to capture reference point
     def init_cb(self, signal):
         self.init = signal.data
@@ -233,10 +228,15 @@ class MOVO_output(object):
     def move_cb(self, signal):
         self.move = signal.data
 
-    ##Decide on which output main should we throw
     #Wheel Odometry callback
     def odom_cb(self, value):
-        self.output_main(value)
+        pos_x = value.pose.pose.position.x
+        pos_y = value.pose.pose.position.y
+        orient_z = self.quaternion_to_euler(value.pose.pose.orientation.x, value.pose.pose.orientation.y, value.pose.pose.orientation.z, value.pose.pose.orientation.w)
+        self.cur_odom = [pos_x, pos_y, orient_z]
+
+        #Also trigger main output
+        self.output_main()
 
     #Output from learning
     def ico_cb(self, value):
@@ -258,6 +258,8 @@ class MOVO_output(object):
     def aconf_cb(self, value):
         self.lin_speed = value.x_vel_limit_mps
         self.ang_speed = value.yaw_rate_limit_rps
+        #print(self.lin_speed)
+        #print(self.ang_speed)
 
     #slow down when it reaches a certain distance
     def decel_rate(self, diff, max_pos):

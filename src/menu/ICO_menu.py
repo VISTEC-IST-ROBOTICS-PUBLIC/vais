@@ -17,7 +17,8 @@ class Menu(object):
 
         #Publishers
         #Control signals
-        self.init_pub = rospy.Publisher('/signal/init', Bool, queue_size = 1)           #if init is True, learning continues, else learning stops
+        self.ar_capture_pub = rospy.Publisher('/signal/ar_capture', Bool, queue_size = 1)           
+        self.odom_capture_pub = rospy.Publisher('/signal/odom_capture', Bool, queue_size = 1)          
         self.shutdown_pub = rospy.Publisher('/signal/shutdown', Bool, queue_size = 1)   #Once this node is triggered, all related nodes are closed
 
         #robot start/stop signals
@@ -33,7 +34,7 @@ class Menu(object):
         msg.p_object = 6
         msg.r_object = 9
         msg.l_rate = 0.05
-        msg.goal_x = 4
+        msg.goal_x = 3
         msg.goal_y =0
         msg.goal_z = 90
         msg.decel_factor = 1/10
@@ -157,21 +158,16 @@ class Menu(object):
         msg.decel_factor = self.input_ver(sys.version_info[0], 12)
         self.vais_pub.publish(msg)
 
-    def init(self):
-        self.init_pub.publish(True)
-
     def shutdown(self):
         #if this invokes, trigger shutdown signal to everyone.
         self.shutdown_pub.publish(True)
-
-    def reset(self):
-        self.reset.publish(True)
 
     ##launcher have to trigger here
     def menu_learn(self):
 
         #First, rest all topics to be False state
-        self.init_pub.publish(False)
+        self.ar_capture_pub.publish(False)
+        self.odom_capture_pub.publish(False)
         self.move_pub.publish(False)
 
         #Second, Load dynamic parameters
@@ -199,9 +195,13 @@ class Menu(object):
 
             key = self.getKey()
             if key == 'i':
-                print("Initiate all nodes to be active, capture all references")
-                #Initiate signal to all nodes
-                self.init_pub.publish(True)
+                print("Press enter to capture ar_tag")
+                self.press_enter()
+                self.ar_capture_pub.publish(True)
+
+                print("Press enter to capture ar_tag")
+                self.press_enter()
+                self.odom_capture_pub.publish(True)
 
                 print("Press enter to trigger a robot start signal")
                 self.press_enter()

@@ -21,7 +21,7 @@ class Core(object):
         self.prev_time = None
         self.l_rate = None
         self.state = None
-        self.init = False
+        self.ar_capture = False
         self.prev_reflex = 0
 
         #Instantiation
@@ -29,16 +29,16 @@ class Core(object):
         self.learn = Learning()
 
         #Flags
-        self.init = False
+        self.ar_capture = False
 
         #Pub topic
         self.ico_out = rospy.Publisher('/ico/output', Float32, queue_size = 1)
-        self.init_pub = rospy.Publisher('/signal/init',Bool, queue_size = 1)
+        self.ar_capture_pub = rospy.Publisher('/signal/ar_capture',Bool, queue_size = 1)
 
 
         #Sub topics
         rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self.alvar_cb, queue_size=1)
-        rospy.Subscriber('/signal/init', Bool, self.init_cb, queue_size =1)
+        rospy.Subscriber('/signal/ar_capture', Bool, self.ar_capture_cb, queue_size =1)
         rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size =1)
         rospy.Subscriber('/data/vais_param', vais_param , self.vais_cb, queue_size=1)
 
@@ -60,8 +60,8 @@ class Core(object):
             print ('NULL: no alvar markers detected')
             pass
 
-    def init_cb(self, signal):                              #initial signal to trigger a reference capture                         
-        self.init = signal.data
+    def ar_capture_cb(self, signal):                              #initial signal to trigger a reference capture                         
+        self.ar_capture = signal.data
 
     def vais_cb(self, data):                                #read state from param
         self.state = data.state
@@ -119,12 +119,12 @@ class Core(object):
 
     def ref_capture(self, pos_dict):
         #if no reference is stored, signal does not trigger
-        if self.init == True:
+        if self.ar_capture == True:
             self.ref_dict = pos_dict.copy()
             print ('Reference point: ', self.ref_dict)
-            self.init = False
+            self.ar_capture = False
             #Signal back to make ref_dict unrewritable
-            self.init_pub.publish(self.init)
+            self.ar_capture_pub.publish(self.ar_capture)
         
         else:
             #print('Please check initialize signal')

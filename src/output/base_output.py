@@ -39,21 +39,20 @@ class MOVO_output(object):
         self.ang_speed = None
         self.state = None
 
-        #Node initialization
-        self.init = False
+        #Odom capture
+        self.odom_capture = False
 
         #Deceleration factor
-        self.decel_factor = ''
+        self.decel_factor = None
 
         #MOVO Physical Output pubs
         self.motion_pub = rospy.Publisher('/movo/cmd_vel', Twist, queue_size=1, latch=False)
-        self.init_pub = rospy.Publisher('/signal/init',Bool, queue_size = 1)
+        self.odom_capture_pub = rospy.Publisher('/signal/odom_capture',Bool, queue_size = 1)
 
         #Signal subs
-        rospy.Subscriber('/signal/init',Bool, self.init_cb, queue_size = 1)
+        rospy.Subscriber('/signal/odom_capture',Bool, self.odom_capture_cb, queue_size = 1)
         rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size = 1)
         rospy.Subscriber('/robot/move', Bool, self.move_cb, queue_size = 1)
-
 
         #MOVO information subs
         rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
@@ -66,23 +65,22 @@ class MOVO_output(object):
         rospy.Subscriber('/ico/output', Float32, self.ico_cb, queue_size = 1)
 
     #Reference position must be captured via an initialization signal.
-    def ref_capture(self):
-        if self.init == True:
+    def ref_capture(self, goal_odom):
+        if self.odom_capture == True:
 
             self.ref_odom = self.cur_odom[:]
             print('Reference Odometry is collected')
             #Once a reference is obtained, generates the target odom.
             print('Target Odometry is generated')
-            self.target_odom(self.goal_odom)
-            self.init=False
+            self.target_odom(goal_odom)
+            self.odom_capture=False
             #Signal back to make ref_odom unrewritable
-            self.init_pub.publish(self.init)
+            self.odom_capture_pub.publish(self.odom_capture)
 
         else:
             #print("Waiting for a reference signal")
             pass
-
-        
+       
     #target goal given by user
     def target_odom(self, goal_list):
         
@@ -103,16 +101,12 @@ class MOVO_output(object):
         self.tar_odom = [pos_x, pos_y, orient_z]
 
     #main
-    def output_main(self):
-        self.ref_capture()                      #trigger once
-        if(self.state != None and self.ico_out != None):
-            self.target(self.state, self.ico_out)
-        else:
-            print("Error: please check state and ico_out")
-
-    #Min speed?        
+    def output_main(self, state, ico_out, goal_odom):
+        self.ref_capture(goal_odom)                      #trigger once
+        self.target(state, ico_out)
+       
     def target(self, state, ico_out):
-
+    
         #Tracking
         if state == "Linear":
             diff = self.linear_euclidean(self.cur_odom, self.tar_odom)
@@ -234,8 +228,8 @@ class MOVO_output(object):
             return Z
     
     #Use initialization signal to capture reference point
-    def init_cb(self, signal):
-        self.init = signal.data
+    def odom_capture_cb(self, signal):
+        self.odom_capture = signal.data
 
     def shutdown_cb(self, signal):
         #Signal to shutdown this from input node.
@@ -254,7 +248,8 @@ class MOVO_output(object):
         self.cur_odom = [pos_x, pos_y, orient_z]
 
         #Also trigger main output
-        self.output_main()
+        if self.state != None and self.ico_out != None and self.goal_odom!=None:
+            self.output_main(self.state, self.ico_out, self.goal_odom)
 
     #Output from learning
     def ico_cb(self, value):

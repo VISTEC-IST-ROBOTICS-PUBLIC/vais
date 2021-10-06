@@ -1,13 +1,5 @@
 <?xml version="1.0"?>
  <launch>
- 	<arg name="sim" default="false"/>
-    <arg name="local" default="true"/>
-
-  <machine name="movo1" address="movo1" user="movo" 
-               env-loader="/home/movo/env.sh" default="true" unless="$(arg local)"/>
-
-
     <node name="ICO_Base_Output" pkg="vais" type="baseop_launch.py" output="screen">	</node>
-	
 </launch>
 

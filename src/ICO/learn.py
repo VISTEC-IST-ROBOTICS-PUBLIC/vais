@@ -19,10 +19,10 @@ class Learning(object):
                     result = (sig_dict[key][0] * p_weight + sig_dict[key][1])
                     delta = self.signal.truncated(l_rate*(sig_dict[key][1] - prev_dict[key][1])*sig_dict[key][0]/diff_time)
                     new_weight = self.signal.truncated((p_weight+delta))
-                    self.data.save(filename, time, new_weight, sig_dict[key][0], sig_dict[key][1], delta)
+                    self.data.save(filename, time, new_weight, sig_dict[key][0], sig_dict[key][1], delta, result)
                     self.res_dict[key] = result
                 else:
-                    #print('Cannot obtain any object ID from signal dictionary')
+                    print('Cannot obtain any object ID from signal dictionary')
                     pass
         
             #print("RESULT: ",self.res_dict)

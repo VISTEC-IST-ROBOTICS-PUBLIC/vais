@@ -10,7 +10,8 @@ if __name__ == '__main__':
    try:
         ICO_menu=Menu()
         ICO_menu.menu_learn()
-        rospy.spin()
+        #One time
+        #rospy.spin()
 
    except rospy.ROSInterruptException:
       rospy.loginfo("ICO menu node terminated.")

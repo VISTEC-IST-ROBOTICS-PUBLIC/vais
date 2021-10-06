@@ -7,6 +7,7 @@ from learn import Learning
 import datetime
 import sys
 import time
+import math
 
 class Core(object):
 
@@ -20,7 +21,7 @@ class Core(object):
         self.prev_time = None
         self.l_rate = None
         self.state = None
-        self.init = None
+        self.init = False
         self.prev_reflex = 0
 
         #Instantiation
@@ -32,6 +33,8 @@ class Core(object):
 
         #Pub topic
         self.ico_out = rospy.Publisher('/ico/output', Float32, queue_size = 1)
+        self.init_pub = rospy.Publisher('/signal/init',Bool, queue_size = 1)
+
 
         #Sub topics
         rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self.alvar_cb, queue_size=1)
@@ -45,11 +48,17 @@ class Core(object):
         if alvar_pt.markers:
             #ETL from msg to dict for each detected markers
             for index, value in enumerate(alvar_pt.markers):
-                self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
+                #Avoid nan value and unnecessary alvar_tag
+                if value.id > 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
+                    pass
+                else:
+                    self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
             self.main(time, self.pos_dict)
+            #print('ALVAR #: ', value.id)
         else:
             #case of no markers
             print ('NULL: no alvar markers detected')
+            pass
 
     def init_cb(self, signal):                              #initial signal to trigger a reference capture                         
         self.init = signal.data
@@ -57,7 +66,7 @@ class Core(object):
     def vais_cb(self, data):                                #read state from param
         self.state = data.state
         self.l_rate = data.l_rate
-        self.thr_list = [data.thr_list[0], data.thr_list[1], data.thr_list[2]]
+        self.thr_list = [data.e_object, data.p_object, data.r_object]
 
     def shutdown_cb(self, signal):
         #Signal to shutdown this from input node.
@@ -67,13 +76,15 @@ class Core(object):
     def main(self, time, pos_dict):
         #Use menu node to trigger a save of reference position
         self.ref_capture(pos_dict)
-
         if self.ref_dict:                            
             #Signal generation to product predictive, reflexive signal       
             self.signal_generation(self.ref_dict, self.pos_dict)
 
+            print("Dummy")
+
             if self.prev_time:
                 diff = self.diff_time(time)
+                #This date time is used as a log
                 date_time = datetime.datetime.fromtimestamp(time.to_sec())
                 result = self.learn.ico(date_time, diff, self.state, self.l_rate, self.sig_dict, self.prev_dict)
 
@@ -84,7 +95,8 @@ class Core(object):
  
             else:
                 #print('Error: please check previous time step generation')
-                pass
+                self.prev_time = time
+
             #Copy to previous signal
             self.prev_dict=self.sig_dict.copy()
 
@@ -107,11 +119,16 @@ class Core(object):
 
     def ref_capture(self, pos_dict):
         #if no reference is stored, signal does not trigger
-        if not self.ref_dict and self.init == True:
+        if self.init == True:
             self.ref_dict = pos_dict.copy()
             print ('Reference point: ', self.ref_dict)
+            self.init = False
+            #Signal back to make ref_dict unrewritable
+            self.init_pub.publish(self.init)
         
         else:
+            #print('Please check initialize signal')
+            print('REF: ', self.ref_dict)
             pass
 
     def signal_generation(self, ref, pos):  

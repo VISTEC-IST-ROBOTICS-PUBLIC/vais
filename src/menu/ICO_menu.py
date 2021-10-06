@@ -33,7 +33,7 @@ class Menu(object):
         msg.p_object = 6
         msg.r_object = 9
         msg.l_rate = 0.05
-        msg.goal_x = 5
+        msg.goal_x = 4
         msg.goal_y =0
         msg.goal_z = 90
         msg.decel_factor = 1/10
@@ -98,12 +98,14 @@ class Menu(object):
     def dynamic_parameters(self):
         client = dynamic_reconfigure.client.Client("movo/movo_driver", timeout=20)
   
-        rcv_input = self.input_ver(sys.version_info[0], 1)
-        if (input == 1):
+        rcv_input = self.input_ver(sys.version_info[0], 0)
+        if (rcv_input == 1):
             #experiment
+            print("Experiment dynamic parameters are loaded")
             client.update_configuration({"x_vel_limit_mps":1.5, "accel_limit_mps2":1.5, "yaw_rate_limit_rps":2.35, "yaw_accel_limit_rps2": 3.14})
         else:
             #safety
+            print("Safety parameters are loaded")
             client.update_configuration({"x_vel_limit_mps":0.5, "accel_limit_mps2":1.0, "yaw_rate_limit_rps":1.0, "yaw_accel_limit_rps2": 1.0})
             
 

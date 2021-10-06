@@ -44,7 +44,7 @@ class ICO_Signal(object):
         r_thr = thr_list[2]
 
         #case lies within exemption range
-        if ed < self.e_obj_thr:
+        if ed < e_thr:
             return 0.0, 0.0
 
         #case of moving in a predictive area

@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
  <launch>
-    <node name="VAIS" pkg="vais" type="learning_launch.py" output="screen" launch-prefix="gnome-terminal --command"></node>
+
     <node name="ICO_menu" pkg="vais" type="menu_launch.py" output="screen" launch-prefix="gnome-terminal --command"></node>
+    <node name="VAIS_Learning" pkg="vais" type="learning_launch.py" output="screen" launch-prefix="gnome-terminal --command"></node>
+    <node name="MOVO_output" pkg="vais" type="baseop_launch.py" output="screen" launch-prefix="gnome-terminal --command"></node>
+
 </launch>

@@ -37,6 +37,7 @@ class MOVO_output(object):
         self.reference = None
         self.lin_speed = None
         self.ang_speed = None
+        self.state = None
 
         #Node initialization
         self.init = False
@@ -65,23 +66,23 @@ class MOVO_output(object):
         rospy.Subscriber('/ico/output', Float32, self.ico_cb, queue_size = 1)
 
     #Reference position must be captured via an initialization signal.
-    def capture_ref(self):
-        if self.init == False:
+    def ref_capture(self):
+        if self.init == True:
+
+            self.ref_odom = self.cur_odom[:]
+            print('Reference Odometry is collected')
+            #Once a reference is obtained, generates the target odom.
+            print('Target Odometry is generated')
+            self.target_odom(self.goal_odom)
+            self.init=False
+            #Signal back to make ref_odom unrewritable
+            self.init_pub.publish(self.init)
+
+        else:
             #print("Waiting for a reference signal")
             pass
-        else:
 
-            if self.once == False:
-                self.ref_odom = self.cur_odom[:]
-                self.once = True
-                print('Reference Odometry is collected')
-                #Once a reference is obtained, generates the target odom.
-                print('Target Odometry is generated')
-                self.target_odom(self.goal_odom)
-            else:
-                #print("Reference is already captured")
-                pass
-
+        
     #target goal given by user
     def target_odom(self, goal_list):
         
@@ -103,26 +104,39 @@ class MOVO_output(object):
 
     #main
     def output_main(self):
-        self.capture_ref()                      #trigger once
-        self.target()
+        self.ref_capture()                      #trigger once
+        if(self.state != None and self.ico_out != None):
+            self.target(self.state, self.ico_out)
+        else:
+            print("Error: please check state and ico_out")
 
     #Min speed?        
     def target(self, state, ico_out):
 
         #Tracking
-        if state == "linear":
-            diff = self.linear_euclidean(self.cur_odom, self.target_odom)
-        elif state == "angular":
-            diff = self.angle_difference(self.cur_odom, self.target_odom)
+        if state == "Linear":
+            diff = self.linear_euclidean(self.cur_odom, self.tar_odom)
+        elif state == "Angular":
+            diff = self.angle_difference(self.cur_odom, self.tar_odom)
         else:
+            diff = 0
             print("Error please check input state")
 
         if diff >=0: 
-            speed = (self.max_speed-(self.max_speed*ico_out))*self.decel_rate(diff, self.max_speed)
+            max = self.max_speed
+            ico = float(self.ico_out)
+            rate = self.decel_rate(diff, max)
+            speed = (max-(max*ico))*rate
                         
             #speed cap, else MOVO moves too slow to approach
             if speed < 0.05:
                 speed = 0.05
+
+            print('DIFF: ', diff)
+            print('ICO: ', ico)
+            print('rate: ', rate)
+            print('SPEED: ',speed)
+
 
         else:
             print("Done")
@@ -138,15 +152,19 @@ class MOVO_output(object):
 
     #Method to publish output
     def drive(self,drive):
-        if self.state == 'Linear':
-            print("Linear: ", drive)
-            self.motion_pub.publish(self.twist_body(drive, 0, 0))
-        elif self.state == 'Angular':
-            print("Angular:  ", drive)
-            self.motion_pub.publish(self.twist_body(0, 0, drive))
-        else:
-            #print("MOVO Output error: Please check a state command")
+        #Safety
+        if self.move == False:
             pass
+        else: 
+            if self.state == 'Linear':
+                print("Linear: ", drive)
+                self.motion_pub.publish(self.twist_body(drive, 0, 0))
+            elif self.state == 'Angular':
+                print("Angular:  ", drive)
+                self.motion_pub.publish(self.twist_body(0, 0, drive))
+            else:
+                #print("MOVO Output error: Please check a state command")
+                pass
 
     #Speed message constructor
     def twist_body(self, linear_x, linear_y, angular_z):
@@ -240,16 +258,17 @@ class MOVO_output(object):
 
     #Output from learning
     def ico_cb(self, value):
-        self.ico_out = value
+        self.ico_out = value.data
 
     #VAIS parameters
     def vais_cb(self, value):
         self.goal_odom = [value.goal_x, value.goal_y, value.goal_z]
         self.decel_factor = value.decel_factor
+        self.state = value.state
         if value.state == 'Linear':
-            self.max_speed = value.max_linear
+            self.max_speed = self.lin_speed
         elif value.state == 'Angular':
-            self.max_speed = value.max_angular
+            self.max_speed = self.ang_speed
         else:
             #print('Error: Please check robot state')
             pass

@@ -54,12 +54,12 @@ class Data(object):
             time.sleep(30)
             sys.exit()        
 
-    def save(self, filename, stamp, weight, predict, reflex, derivative):
+    def save(self, filename, stamp, weight, predict, reflex, derivative, ico_out):
         path = self.filepath(filename)
         try:
             with open(path,'a') as open_dat:
                 writer = csv.writer(open_dat)
-                writer.writerow([stamp, weight ,predict, reflex, derivative])
+                writer.writerow([stamp, weight ,predict, reflex, derivative, ico_out])
                 print("information saved")
         except:
             print('Error: cannot save file')
@@ -74,6 +74,24 @@ class Data(object):
                     last_line = f.readlines()[-1]
                     line = last_line.split(',')
                     weight = float(line[1])
+                    return weight
+                except:
+                    print('No trace of previous weight')
+                    return 0.0
+
+        except:
+            print('Error: cannot load weight')
+            time.sleep(30)
+            sys.exit()
+
+    def load_op(self, filename):
+        path = self.filepath(filename)
+        try:        
+            with open(path, 'r') as f:
+                try:
+                    last_line = f.readlines()[-1]
+                    line = last_line.split(',')
+                    weight = float(line[6])
                     return weight
                 except:
                     print('No trace of previous weight')

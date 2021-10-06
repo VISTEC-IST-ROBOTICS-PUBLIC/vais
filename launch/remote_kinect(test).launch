@@ -1,0 +1,9 @@
+<launch>
+
+  <node pkg="nodelet" type="nodelet" name="nodelet133"
+        args="load depth_image_proc/point_cloud_xyz nodelet_manager">
+    <remap from="camera_info" to="/movo_camera/sd/camera_info"/>
+    <remap from="image_rect" to="/movo_camera/sd/image_color_rect"/>
+    <remap from="points" to="/movo_camra/sd/image_depth_rect"/>
+  </node>
+</launch>

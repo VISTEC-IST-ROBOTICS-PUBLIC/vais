@@ -47,7 +47,7 @@ class Data(object):
                 #create header
                 writer = csv.writer(open_dat)
                 #Header
-                writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative"])
+                writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative", "ico_output"])
                 print("file created")
         except:
             print('Error: cannot create file')

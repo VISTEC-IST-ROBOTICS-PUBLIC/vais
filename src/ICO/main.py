@@ -80,8 +80,6 @@ class Core(object):
             #Signal generation to product predictive, reflexive signal       
             self.signal_generation(self.ref_dict, self.pos_dict)
 
-            print("Dummy")
-
             if self.prev_time:
                 diff = self.diff_time(time)
                 #This date time is used as a log
@@ -138,7 +136,7 @@ class Core(object):
                 result = self.signal.obj_signal(ref[key], pos[key], self.thr_list)   #Use position list only.
                 self.sig_dict[key] = result
                 #Condition where the reflexive signal already reached 1, we would like to stop the robot.
-                if self.prev_reflex == 1:
+                if self.prev_reflex >= 1:
                     print("Reflex hits: Pause")
                     time.sleep(10)
                     sys.exit()               

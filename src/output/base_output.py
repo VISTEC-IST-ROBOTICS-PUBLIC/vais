@@ -2,7 +2,6 @@
 
 #MOVO modules
 #from system_defines import *
-#Note use rqt_reconfigure to modify maximum velocity/acceleration of MOVO to 1.0m/s and 0.5m/s2
 
 from movo_msgs.msg import *
 from geometry_msgs.msg import Twist
@@ -38,6 +37,7 @@ class MOVO_output(object):
         self.lin_speed = None
         self.ang_speed = None
         self.state = None
+        self.diff_prev = None
 
         #Odom capture
         self.odom_capture = False
@@ -110,38 +110,43 @@ class MOVO_output(object):
         #Tracking
         if state == "Linear":
             diff = self.linear_euclidean(self.cur_odom, self.tar_odom)
+            max_diff = self.linear_euclidean(self.ref_odom, self.tar_odom)
         elif state == "Angular":
             diff = self.angle_difference(self.cur_odom, self.tar_odom)
+            max_diff = self.angle_difference(self.ref_odom, self.tar_odom)
         else:
             diff = 0
             print("Error please check input state")
 
-        if diff >=0: 
-            max = self.max_speed
-            ico = float(self.ico_out)
-            rate = self.decel_rate(diff, max)
-            speed = (max-(max*ico))*rate
-                        
-            #speed cap, else MOVO moves too slow to approach
-            if speed < 0.05:
-                speed = 0.05
+        print('cur: ', self.cur_odom)
+        print('tar: ', self.tar_odom)
 
-            print('DIFF: ', diff)
-            print('ICO: ', ico)
-            print('rate: ', rate)
-            print('SPEED: ',speed)
-
+        #when diff > 2% of max difference (Threshold)
+        threshold = 0.02*max_diff
+        print('diff: ', diff)
+        print('thres: ', threshold)
+        if diff >= threshold:
+                max = self.max_speed
+                ico = float(self.ico_out)
+                rate = self.decel_rate(diff, max_diff)
+                speed = (max-(max*ico))*rate
+                #min speed cap, else MOVO moves too slow to approach, around 5% of the robot's max speed
+                min_cap = 0.025*max
+                if speed < min_cap:
+                    speed = min_cap
 
         else:
             print("Done")
             speed = 0
 
+        print('speed: ', speed)
+        
 
         if self.direction == "CCW":
-            #self.drive(speed)
+            self.drive(speed)
             print(speed)
         elif self.direction == "CW":
-            #self.drive(-speed)
+            self.drive(-speed)
             print(-speed)
 
     #Method to publish output
@@ -190,6 +195,7 @@ class MOVO_output(object):
         
         return diff_z
 
+    #Wrongly calculated
     def linear_euclidean(self, cur_list, tar_list):
         #First, find the different
         diff_x = tar_list[0] - cur_list[0]
@@ -276,13 +282,18 @@ class MOVO_output(object):
         #print(self.ang_speed)
 
     #slow down when it reaches a certain distance
-    def decel_rate(self, diff, max_pos):
-        min_pos = max_pos*self.decel_factor
-        if diff < min_pos: 
-            result = 1-((diff-min_pos)/(max_pos-min_pos))
+    def decel_rate(self, diff, max_diff):
+        min_diff = max_diff*self.decel_factor
+        if diff < min_diff: 
+            num = abs(diff-min_diff)
+            denom = max_diff-min_diff
+            result = 1.0-(num/denom)
         else:
-            result = 1
-            return result
+            result = 1.0
+        
+        #print('Decel rate: ', result)
+        return result
+
 
     #Note
     ##Kinova movo max speed is 2 m/s, but clamped at 0.5 m/s

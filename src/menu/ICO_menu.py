@@ -29,15 +29,15 @@ class Menu(object):
 
     def default_value(self):
         msg = vais_param()
-        msg.state = 'Linear'
-        msg.e_object = 3
-        msg.p_object = 6
-        msg.r_object = 9
+        msg.state = 'Angular'
+        msg.e_object = 1
+        msg.p_object = 4
+        msg.r_object = 7
         msg.l_rate = 0.05
         msg.goal_x = 3
         msg.goal_y =0
         msg.goal_z = 90
-        msg.decel_factor = 1/10
+        msg.decel_factor = 0.5
         self.vais_pub.publish(msg)
 
     def input_ver(self, sys_version, st_value):
@@ -97,6 +97,7 @@ class Menu(object):
         return input_state
 
     def dynamic_parameters(self):
+        print("Waiting for dynamic reconfigure connection")
         client = dynamic_reconfigure.client.Client("movo/movo_driver", timeout=20)
   
         rcv_input = self.input_ver(sys.version_info[0], 0)
@@ -199,7 +200,7 @@ class Menu(object):
                 self.press_enter()
                 self.ar_capture_pub.publish(True)
 
-                print("Press enter to capture ar_tag")
+                print("Press enter to capture Robot's Odometry")
                 self.press_enter()
                 self.odom_capture_pub.publish(True)
 
@@ -212,36 +213,41 @@ class Menu(object):
                 self.move_pub.publish(False)
                 print("One second Cooldown")
                 rospy.sleep(1)
-                print('reset init to False state')
-                self.init_pub.publish(False)
+                print('reset capture to False state')
+                self.ar_capture_pub.publish(False)
+                self.odom_capture_pub.publish(False)
 
                 print("Press enter to back to a menu section")
                 self.press_enter()
 
             elif key == 'p':
                 print("Pause all related nodes") 
-                self.init_pub.publish(False)
+                self.ar_capture_pub.publish(False)
+                self.odom_capture_pub.publish(False)
                 self.move_pub.publish(False)
                 print("Press enter to back to a menu section")
                 self.press_enter()
 
             elif key == 'r':
                 print("Resume all related nodes") 
-                self.init_pub.publish(True)
+                self.ar_capture_pub.publish(False)
+                self.odom_capture_pub.publish(False)
                 self.move_pub.publish(True)
                 print("Press enter to back to a menu section")
                 self.press_enter()                
 
             elif key == 's':
                 print("Shutdown all related nodes") 
-                self.init_pub.publish(False)
+                self.ar_capture_pub.publish(False)
+                self.odom_capture_pub.publish(False)
                 self.move_pub.publish(False)
                 self.shutdown()
                 rospy.signal_shutdown("Shutdown all nodes") 
                 break
 
             elif key =='\x1b':                      #ESC
-                self.init_pub.publish(False)
+                self.ar_capture_pub.publish(False)
+                self.odom_capture_pub.publish(False)
                 self.move_pub.publish(False)
                 self.shutdown()
                 rospy.signal_shutdown("Exit")

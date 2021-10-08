@@ -12,24 +12,19 @@ import time
 
 class Menu(object):
     def __init__(self):
-        #Parameters
+        #Initial Parameters
         self.move = False
 
         #Publishers
-        #Control signals
-        self.ar_capture_pub = rospy.Publisher('/signal/ar_capture', Bool, queue_size = 1)           
-        self.odom_capture_pub = rospy.Publisher('/signal/odom_capture', Bool, queue_size = 1)          
-        self.shutdown_pub = rospy.Publisher('/signal/shutdown', Bool, queue_size = 1)   #Once this node is triggered, all related nodes are closed
+        self.ar_capture_pub = rospy.Publisher('/signal/ar_capture', Bool, queue_size = 1)           #ALVAR feedback from robot's camera.
+        self.odom_capture_pub = rospy.Publisher('/signal/odom_capture', Bool, queue_size = 1)       #Odometry feedback from robot.   
+        self.shutdown_pub = rospy.Publisher('/signal/shutdown', Bool, queue_size = 1)               
+        self.move_pub = rospy.Publisher('/robot/move', Bool, queue_size = 1)                        #Trigger signal to allows robot to move
+        self.vais_pub = rospy.Publisher('/data/vais_param', vais_param, queue_size=1)               #All parameters used in learning.
 
-        #robot start/stop signals
-        self.move_pub = rospy.Publisher('/robot/move', Bool, queue_size = 1)            #Trigger signal to allows a robot to move
-
-        #references
-        self.vais_pub = rospy.Publisher('/data/vais_param', vais_param, queue_size=1)   #All parameters are bundled in custom message and sent.
-
-    def default_value(self):
+    def default_value(self):                                                                        #Default values
         msg = vais_param()
-        msg.state = 'Angular'
+        msg.state = 'Linear'
         msg.e_object = 1
         msg.p_object = 4
         msg.r_object = 7
@@ -40,8 +35,7 @@ class Menu(object):
         msg.decel_factor = 0.5
         self.vais_pub.publish(msg)
 
-    def input_ver(self, sys_version, st_value):
-        #First load to store the robot learning state
+    def input_ver(self, sys_version, st_value):                                                     #Recieves input from user, check python version in a machine.
         input_state_chk = False
         while not input_state_chk:
             try:
@@ -54,11 +48,10 @@ class Menu(object):
                 else:
                     rcv_input = int(input(statement))      
                     return rcv_input  
-
             except ValueError:
                 print('Please enter only value. Try again: ')
 
-    def statement(self, value):
+    def statement(self, value):                                                                     #Input statements for each questions.
         if value == 0:
             input_state = """
         Dynamic parameters configuration choices:
@@ -96,7 +89,7 @@ class Menu(object):
 
         return input_state
 
-    def dynamic_parameters(self):
+    def dynamic_parameters(self):                                                                   #Read dynamic parameters from the robots and rewritten with defined values.
         print("Waiting for dynamic reconfigure connection")
         client = dynamic_reconfigure.client.Client("movo/movo_driver", timeout=20)
   
@@ -110,12 +103,10 @@ class Menu(object):
             print("Safety parameters are loaded")
             client.update_configuration({"x_vel_limit_mps":0.5, "accel_limit_mps2":1.0, "yaw_rate_limit_rps":1.0, "yaw_accel_limit_rps2": 1.0})
             
-
-    def input_selection(self):
+    def input_selection(self):                                                                      
         rcv_input = self.input_ver(sys.version_info[0], 1)
         if rcv_input == 1:
             print('Load a default parameters')
-            #Automatically publish to vais_parameters
             self.default_value()
             return rcv_input
         elif rcv_input == 2:
@@ -124,7 +115,6 @@ class Menu(object):
             return rcv_input
         else: 
             print('Invalid input. Try again:')
-
 
     def manual_input(self):
         msg = vais_param()
@@ -159,31 +149,29 @@ class Menu(object):
         msg.decel_factor = self.input_ver(sys.version_info[0], 12)
         self.vais_pub.publish(msg)
 
-    def shutdown(self):
-        #if this invokes, trigger shutdown signal to everyone.
+    def shutdown(self):                                                                             #Trigger signal to shutdown all related nodes.
         self.shutdown_pub.publish(True)
 
-    ##launcher have to trigger here
-    def menu_learn(self):
+    def menu_learn(self):                                                                           #Main structure for learning mechanisms which receives the user's input to manually captures the initial position of AR tag and odometry.
 
-        #First, rest all topics to be False state
+        #Initially resetted all topics to False state.
         self.ar_capture_pub.publish(False)
         self.odom_capture_pub.publish(False)
         self.move_pub.publish(False)
 
-        #Second, Load dynamic parameters
+        #Load dynamic parameters from robot.
         self.dynamic_parameters()
 
-        #Third, Load vais parameters
+        #Load VAIS parameters or entering it manually.
         self.input_selection()
         
-        #Last, Robot's option
+        #Choose the option to operate the robot.
         self.option()
 
     def option(self):
-        #Press detection
-        while(True):
+        while(True):                                                                                #Indefinite loop
 
+            #Main message
             msg = '''
                 Option: 
                 1. Press I to Initiate
@@ -195,8 +183,8 @@ class Menu(object):
             print(msg)
 
             key = self.getKey()
-            if key == 'i':
-                print("Press enter to capture ar_tag")
+            if key == 'i' or key == 'I':
+                print("Press enter to capture AR tag")
                 self.press_enter()
                 self.ar_capture_pub.publish(True)
 
@@ -211,8 +199,10 @@ class Menu(object):
                 print("Press enter to trigger a robot stop signal")
                 self.press_enter()
                 self.move_pub.publish(False)
+
                 print("One second Cooldown")
                 rospy.sleep(1)
+
                 print('reset capture to False state')
                 self.ar_capture_pub.publish(False)
                 self.odom_capture_pub.publish(False)
@@ -220,7 +210,7 @@ class Menu(object):
                 print("Press enter to back to a menu section")
                 self.press_enter()
 
-            elif key == 'p':
+            elif key == 'p'or key == 'P':
                 print("Pause all related nodes") 
                 self.ar_capture_pub.publish(False)
                 self.odom_capture_pub.publish(False)

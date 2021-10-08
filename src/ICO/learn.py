@@ -4,9 +4,9 @@ from signals import ICO_Signal
 class Learning(object):
     
     def __init__(self):
-        self.data = Data()
-        self.signal = ICO_Signal()
-        self.res_dict = {}              #result of each object in dictionary
+        self.data = Data()              #Instantiation from data management module.
+        self.signal = ICO_Signal()      #Instantiation from signal module. 
+        self.res_dict = {}              #Store results in Python dict.
 
     def ico(self, time, diff_time, state, l_rate , sig_dict, prev_dict):
         if prev_dict:
@@ -22,17 +22,16 @@ class Learning(object):
                     self.data.save(filename, time, new_weight, sig_dict[key][0], sig_dict[key][1], delta, result)
                     self.res_dict[key] = result
                 else:
-                    print('Cannot obtain any object ID from signal dictionary')
+                    print("[ERROR]: Cannot obtain any object ID from signal dictionary")
                     pass
         
             #print("RESULT: ",self.res_dict)
-            #find maximum possible result to publish it to drive. More value on result means slower robot drive
-            find_max = max(self.res_dict.keys(), key=lambda k:self.res_dict[k])
+            find_max = max(self.res_dict.keys(), key=lambda k:self.res_dict[k])                         #Use winner takes all (most sensitve values are the chosen result to drive the robot)
             max_value = self.res_dict[find_max]
             return max_value
 
         else:
             #Previous signal is needed on the later steps
-            #print('First time step')
+            #print("[INFO]: This is a first time step")
             pass
 

@@ -15,12 +15,20 @@ import numpy as np
 class MOVO_output(object):
     def __init__(self):
 
-        ##Twist message
+        #Instantiation
         self.move_cmd = Twist()
 
-        #Trigger to makes a robot move
+        #Initial parameters
         self.move = False
         self.direction = None
+        self.ico_out = None
+        self.max_speed = None
+        self.reference = None
+        self.lin_speed = None
+        self.ang_speed = None
+        self.state = None
+        self.odom_capture = False
+        self.decel_factor = None
 
         #Odometry list [pos_x, pos_y, orient_z]
         self.ref_odom = []
@@ -28,57 +36,34 @@ class MOVO_output(object):
         self.tar_odom = []
         self.goal_odom = []
 
-        #output from ICO
-        self.ico_out = None
-
-        #Parameters
-        self.max_speed = None
-        self.reference = None
-        self.lin_speed = None
-        self.ang_speed = None
-        self.state = None
-        self.diff_prev = None
-
-        #Odom capture
-        self.odom_capture = False
-
-        #Deceleration factor
-        self.decel_factor = None
-
-        #MOVO Physical Output pubs
+        #Publishers
         self.motion_pub = rospy.Publisher('/movo/cmd_vel', Twist, queue_size=1, latch=False)
         self.odom_capture_pub = rospy.Publisher('/signal/odom_capture',Bool, queue_size = 1)
 
-        #Signal subs
+        #Subscribers
         rospy.Subscriber('/signal/odom_capture',Bool, self.odom_capture_cb, queue_size = 1)
         rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size = 1)
         rospy.Subscriber('/robot/move', Bool, self.move_cb, queue_size = 1)
-
-        #MOVO information subs
         rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
         rospy.Subscriber('/movo/feedback/active_configuration', Configuration, self.aconf_cb, queue_size=1)
-
-        #VAIS parameters sub
         rospy.Subscriber('/data/vais_param', vais_param, self.vais_cb, queue_size=1)
-
-        #ICO output sub
         rospy.Subscriber('/ico/output', Float32, self.ico_cb, queue_size = 1)
 
-    #Reference position must be captured via an initialization signal.
+    #Reference position must be captured via an Odom capture signal.
     def ref_capture(self, goal_odom):
         if self.odom_capture == True:
 
             self.ref_odom = self.cur_odom[:]
-            print('Reference Odometry is collected')
+            print("[INFO]: Reference Odometry is collected at: ", self.ref_odom)
             #Once a reference is obtained, generates the target odom.
-            print('Target Odometry is generated')
             self.target_odom(goal_odom)
+            print("[INFO]: Target Odometry is generated at: ", self. tar_odom)
             self.odom_capture=False
             #Signal back to make ref_odom unrewritable
             self.odom_capture_pub.publish(self.odom_capture)
 
         else:
-            #print("Waiting for a reference signal")
+            #print("[INFO]: Waiting for a reference signal")
             pass
        
     #target goal given by user

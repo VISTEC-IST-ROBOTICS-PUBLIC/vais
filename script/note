@@ -1,1 +1,2 @@
-Chmod src files to make a roslaunch executable.
+Miscellaneous note.
+CHMOD these files to make it executable on roslaunch.

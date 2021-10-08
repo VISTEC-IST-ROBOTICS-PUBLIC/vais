@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+
 import rospy
-from demo.demo3 import demo3
+from demo.demo1 import Demo1
 
 
 if __name__ == '__main__':
@@ -8,7 +9,7 @@ if __name__ == '__main__':
    # initialize ICO demo node
    rospy.init_node('ICO_demo')
    try:
-     exe = demo3()
+     exe = Demo1
      rospy.spin()
 
    except rospy.ROSInterruptException:

@@ -13,7 +13,7 @@ import datetime as dt
 
 if __name__ == "__main__":
 
-    print("Initialize standby position")
+    print("[INFO]: Initialize standby position")
     process_start_time = dt.datetime.now()
     rospy.init_node("ICO_standby")
    
@@ -21,9 +21,7 @@ if __name__ == "__main__":
     movo_torsor = TorsoActionClient()
     rospy.sleep(2)
 
-#--------------------------------------Torso--------------------------------------------------
-
-    print("Start adjustment")
+    print("[INFO]: Start adjustment")
     movo_torsor.clear()
     temp_torso = rospy.wait_for_message("/movo/linear_actuator/joint_states", JointState)
     current_torso_pos = list(temp_torso.position)
@@ -33,9 +31,8 @@ if __name__ == "__main__":
     movo_torsor.add_point([0.55], 12)    
     movo_torsor.start()
     movo_torsor.wait(10.0)
-    print("MOVO's body adjustment is done")
+    print("[INFO]: Body adjustment is done")
 
-    #----------------------------------------Head-----------------------------------------------
     tmp_head = rospy.wait_for_message("/movo/head/joint_states", JointState)
     current_angles= tmp_head.position
 
@@ -47,4 +44,4 @@ if __name__ == "__main__":
     movo_head.add_point([0.07362841069698334, -1.1781245470046997], head_timer) #This is a third phase
     movo_head.start()
     movo_head.wait(head_timer+5)
-    print("MOVO's head adjustment is done")
+    print("[INFO]: Head adjustment is done")

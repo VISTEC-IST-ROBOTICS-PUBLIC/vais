@@ -10,9 +10,9 @@ import datetime as dt
 
 if __name__ == "__main__":
 
-    print("initialize gripper to open")
+    print("[INFO]: Initialize gripper to open")
     process_start_time = dt.datetime.now()
-    rospy.init_node("movo_open_gripper")
+    rospy.init_node("MOVO_open_gripper")
 
     #movo_lfinger = GripperActionClient('left')
     movo_rfinger = GripperActionClient('right')

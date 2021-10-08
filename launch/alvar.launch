@@ -1,3 +1,4 @@
+<!--Due to a limitation of the robot, ALVAR launcher needs to be executed in a robot itself-->
 <launch>
 	<arg name="marker_size" default="4.5" />
 	<arg name="max_new_marker_error" default="0.08" />

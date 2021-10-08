@@ -13,32 +13,36 @@ class Data(object):
     def __init__(self):
         pass
 
+    #Constructs a file name by reading the AR tag from camera.
     def filename(self, id , state):
         str_id = str(id)
         name = "ICOLOG_"+str_id+"_"+state+".csv"
         return name
 
+    #Generates full filepath.
     def filepath(self, filename):
         script_path = os.path.abspath(__file__)
         script_dir = os.path.split(script_path)[0]
-        rel_path = 'data/'+filename
+        rel_path = "data/"+filename
         path = os.path.join(script_dir, rel_path)
         return path
 
+    #Check if file exists
     def filecheck(self, filename):
         path = self.filepath(filename)
         print(path)
         try:
             if (os.path.exists(path) == True):
-                print('File exists')
+                print("[INFO]: File exists")
             else:
-                print('Creates a new file')
+                print("[INFO]: Creates a new file")
                 self.create(filename)
         except: 
-            print("File check error, please check filename")
+            print("[ERROR]: File check error, please check filename")
             time.sleep(30)
             sys.exit()
 
+    #Create CSV file
     def create(self, filename):
         try:
             #create file
@@ -48,24 +52,26 @@ class Data(object):
                 writer = csv.writer(open_dat)
                 #Header
                 writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative", "ico_output"])
-                print("file created")
+                print("[INFO]: File: "+filename+" has been created")
         except:
-            print('Error: cannot create file')
+            print("[ERROR]: Cannot create: ", filename)
             time.sleep(30)
             sys.exit()        
 
+    #Save information to the target file.
     def save(self, filename, stamp, weight, predict, reflex, derivative, ico_out):
         path = self.filepath(filename)
         try:
             with open(path,'a') as open_dat:
                 writer = csv.writer(open_dat)
                 writer.writerow([stamp, weight ,predict, reflex, derivative, ico_out])
-                print("information saved")
+                print("[INFO]: Information has been saved")
         except:
-            print('Error: cannot save file')
+            print("[ERROR]]: Cannot save: ", filename)
             time.sleep(30)
             sys.exit()
 
+    #Load weight information from the target file.
     def load(self, filename):
         path = self.filepath(filename)
         try:        
@@ -76,14 +82,15 @@ class Data(object):
                     weight = float(line[1])
                     return weight
                 except:
-                    print('No trace of previous weight')
+                    print("[INFO]: No trace of previous weight, return 0.0")
                     return 0.0
 
         except:
-            print('Error: cannot load weight')
+            print("[ERRROR]: Cannot load weight from: ", filename)
             time.sleep(30)
             sys.exit()
 
+    #Load ICO output information from the target file.
     def load_op(self, filename):
         path = self.filepath(filename)
         try:        
@@ -94,13 +101,10 @@ class Data(object):
                     weight = float(line[6])
                     return weight
                 except:
-                    print('No trace of previous weight')
+                    print("[INFO]: No trace of ICO output, return 0.0")
                     return 0.0
 
         except:
-            print('Error: cannot load weight')
+            print("[ERRROR]: Cannot load ICO output from: ", filename)
             time.sleep(30)
             sys.exit()
-
-if __name__ == "__main__":
-  pass

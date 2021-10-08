@@ -1,5 +1,7 @@
 #!/usr/bin/env python
- 
+
+#This module is used to test an in-code dynamic reconfiguration before integrate it into menu node.
+
 import rospy
 import sys
 import dynamic_reconfigure.client

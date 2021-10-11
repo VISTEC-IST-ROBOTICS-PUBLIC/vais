@@ -51,7 +51,7 @@ class Data(object):
                 #create header
                 writer = csv.writer(open_dat)
                 #Header
-                writer.writerow(["Timestamp", "Weight", "Predictive", "Reflexive", "Derivative", "ico_output"])
+                writer.writerow(["Timestamp", "Weight", "Object", "Predictive", "Reflexive", "Derivative", "ico_output"])
                 print("[INFO]: File: "+filename+" has been created")
         except:
             print("[ERROR]: Cannot create: ", filename)
@@ -59,12 +59,12 @@ class Data(object):
             sys.exit()        
 
     #Save information to the target file.
-    def save(self, filename, stamp, weight, predict, reflex, derivative, ico_out):
+    def save(self, filename, stamp, weight, object, predict, reflex, derivative, ico_out):
         path = self.filepath(filename)
         try:
             with open(path,'a') as open_dat:
                 writer = csv.writer(open_dat)
-                writer.writerow([stamp, weight ,predict, reflex, derivative, ico_out])
+                writer.writerow([stamp, weight, object ,predict, reflex, derivative, ico_out])
                 print("[INFO]: Information has been saved")
         except:
             print("[ERROR]]: Cannot save: ", filename)

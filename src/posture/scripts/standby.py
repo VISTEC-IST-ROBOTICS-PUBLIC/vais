@@ -27,8 +27,8 @@ if __name__ == "__main__":
     current_torso_pos = list(temp_torso.position)
     movo_torsor.add_point(current_torso_pos, 0.0)
     # movo_torsor.add_point([0.45], 4)
-    movo_torsor.add_point([0.26], 6)     #This is updated as a base installation
-    movo_torsor.add_point([0.55], 12)    
+    #movo_torsor.add_point([0.26], 6)     #This is updated as a base installation
+    #movo_torsor.add_point([0.47], 12)    #Tallest possible
     movo_torsor.start()
     movo_torsor.wait(10.0)
     print("[INFO]: Body adjustment is done")
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     movo_head.add_point(list(current_angles), 0.0)
     head_timer += 10
     #movo_head.add_point([0.0, math.radians(-45.0)], head_timer)  #This is second phase
-    movo_head.add_point([0.07362841069698334, -1.1781245470046997], head_timer) #This is a third phase
+    movo_head.add_point([0.07392589002847672, -1.1551105976104736], head_timer) #This is a third phase
     movo_head.start()
     movo_head.wait(head_timer+5)
     print("[INFO]: Head adjustment is done")

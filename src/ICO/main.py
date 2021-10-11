@@ -21,6 +21,7 @@ class Core(object):
         self.l_rate = None
         self.ar_capture = False
         self.prev_reflex = 0
+        self.move = False
 
         #Instantiation
         self.signal = ICO_Signal()
@@ -36,6 +37,7 @@ class Core(object):
         rospy.Subscriber('/signal/ar_capture', Bool, self.ar_capture_cb, queue_size =1)
         rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size =1)
         rospy.Subscriber('/data/vais_param', vais_param , self.vais_cb, queue_size=1)
+        rospy.Subscriber('/robot/move', Bool, self.move_cb, queue_size=1)
 
     def main(self, time, pos_dict):
         #Use menu node to manually capture an AR reference position
@@ -48,10 +50,10 @@ class Core(object):
                 diff = self.diff_time(time)
                 #This human readable date time is used in the output log
                 date_time = datetime.datetime.fromtimestamp(time.to_sec())
-                result = self.learn.ico(date_time, diff, self.state, self.l_rate, self.sig_dict, self.prev_dict)
+                result = self.learn.ico(date_time, diff, self.state, self.l_rate, self.sig_dict, self.prev_dict, self.move)
 
                 #On screen for debug
-                print(result)
+                print("[INFO: RESULT]", result)
                 #publish to drive
                 self.ico_out.publish(result)
  
@@ -98,6 +100,9 @@ class Core(object):
             if key in pos:
                 result = self.signal.obj_signal(ref[key], pos[key], self.thr_list)   #Use position list only.
                 self.sig_dict[key] = result
+                #print('obj: ', self.sig_dict[key][0])
+                #print('pre: ', self.sig_dict[key][1])
+                #print('ref:', self.sig_dict[key][2])
                 #Condition where the reflexive signal already reached 1, we would like to stop the robot.
                 if self.prev_reflex >= 1:
                     print("[INFO]: Reflex hits, Pause")
@@ -105,13 +110,14 @@ class Core(object):
                     self.shutdown_pub.publish(True)               
                 else:
                     #Condition where we need a previous reflex to calculate on a next time step.
-                    self.prev_reflex = self.sig_dict[key][1]
+                    self.prev_reflex = self.sig_dict[key][2]
+                    print("[INFO]: Diag previous reflex ", self.prev_reflex)
                 
             else:
                 #This case means we already have the object on scene, but somehow disappeared from the screen at a current time.
                 #Might need a counter in case there is a few missing iteration
                 print("[Error]: current POS is not found, please check the object (SET PREDICT:0, REFLEX: 1")
-                self.sig_dict[key] = [0,1]
+                self.sig_dict[key] = [0, 1, 1]
                 time.sleep(10)
                 self.shutdown_pub.publish(True)
 
@@ -122,7 +128,7 @@ class Core(object):
             #ETL from msg to dict for each detected markers
             for index, value in enumerate(alvar_pt.markers):
                 #Avoid nan value and unnecessary alvar_tag
-                if value.id > 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
+                if value.id < 1 or value.id > 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
                     pass
                 else:
                     self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
@@ -145,3 +151,7 @@ class Core(object):
         #Signal to shutdown this from input node.
         if signal.data == True:
             rospy.signal_shutdown("[INFO]: Shutdown signal is received, turn this node off")
+
+    #Signal from input node to order the robot to move
+    def move_cb(self, signal):
+        self.move = signal.data

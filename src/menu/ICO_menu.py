@@ -25,11 +25,11 @@ class Menu(object):
     def default_value(self):                                                                        #Default values
         msg = vais_param()
         msg.state = 'Linear'
-        msg.e_object = 1
-        msg.p_object = 4
-        msg.r_object = 7
+        msg.e_object = 0.5
+        msg.p_object = 2
+        msg.r_object = 4
         msg.l_rate = 0.05
-        msg.goal_x = 3
+        msg.goal_x = 5
         msg.goal_y =0
         msg.goal_z = 90
         msg.decel_factor = 0.5

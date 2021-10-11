@@ -33,6 +33,12 @@ class ICO_Signal(object):
         euc_result = self.truncated(math.sqrt(square_x+square_y+square_z))
         return euc_result
 
+    def obj_detection(self,cur_list):
+        if cur_list:
+            return 1.0
+        else:
+            return 0.0
+
     def obj_calculation(self, ed, thr_list):          
 
         #Threshold for exemption, predictive, reflexive area
@@ -63,7 +69,9 @@ class ICO_Signal(object):
     #main method
     def obj_signal(self, ref_list, cur_list, thr_list):
         euclidean = self.euclidean_dist(ref_list, cur_list)
+        obj = self.obj_detection(cur_list)
         predict, reflex = self.obj_calculation(euclidean, thr_list)
+        #print("[INFO]: OBJECT Signal: ", obj)
         #print("[INFO]: PREDICT Signal: ", predict)
         #print("[INFO]: REFLEX Signal: ", reflex)
-        return [predict, reflex]
+        return [obj, predict, reflex]

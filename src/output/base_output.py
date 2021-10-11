@@ -11,6 +11,7 @@ from nav_msgs.msg import Odometry
 import rospy
 import math
 import numpy as np
+import sys
 
 class MOVO_output(object):
     def __init__(self):
@@ -61,14 +62,14 @@ class MOVO_output(object):
             self.odom_capture=False
             #Signal back to make ref_odom unrewritable
             self.odom_capture_pub.publish(self.odom_capture)
-
         else:
             #print("[INFO]: Waiting for a reference signal")
             pass
        
-    #target goal given by user
+    #Target goal given by user
     def target_odom(self, goal_list):
         
+        #Check turn direction
         if (goal_list[2] < 0):
             self.direction = "CW"
         else:
@@ -87,7 +88,7 @@ class MOVO_output(object):
 
     #main
     def output_main(self, state, ico_out, goal_odom):
-        self.ref_capture(goal_odom)                      #trigger once
+        self.ref_capture(goal_odom)  
         self.target(state, ico_out)
        
     def target(self, state, ico_out):
@@ -96,43 +97,45 @@ class MOVO_output(object):
         if state == "Linear":
             diff = self.linear_euclidean(self.cur_odom, self.tar_odom)
             max_diff = self.linear_euclidean(self.ref_odom, self.tar_odom)
+            threshold = 0.02*max_diff
         elif state == "Angular":
             diff = self.angle_difference(self.cur_odom, self.tar_odom)
             max_diff = self.angle_difference(self.ref_odom, self.tar_odom)
+            threshold = 0.02*max_diff
         else:
             diff = 0
-            print("Error please check input state")
+            threshold = 0
+            print("[ERRROR]: Please check input state")
 
         print('cur: ', self.cur_odom)
         print('tar: ', self.tar_odom)
-
-        #when diff > 2% of max difference (Threshold)
-        threshold = 0.02*max_diff
         print('diff: ', diff)
         print('thres: ', threshold)
+
         if diff >= threshold:
                 max = self.max_speed
                 ico = float(self.ico_out)
+                #deceleration rate triggers when the robot moves pass through the certain threshold
                 rate = self.decel_rate(diff, max_diff)
-                speed = (max-(max*ico))*rate
-                #min speed cap, else MOVO moves too slow to approach, around 5% of the robot's max speed
-                min_cap = 0.025*max
+                ico_factor = max*ico
+                #When a caculated factor is generated beyond the max speed, capped it with max speed (It means final speed is 0).
+                if ico_factor > max:
+                    ico_factor = max
+                speed = (max-(ico_factor))*rate
+                #min speed cap, else MOVO moves too slow to approach, around 2.5% of the robot's max speed
+                min_cap = 0.05
                 if speed < min_cap:
-                    speed = min_cap
+                    speed = 0
+                    diff = 0
 
         else:
-            print("Done")
+            print("[INFO]: DONE")
             speed = 0
+            sys.sleep(10)
 
-        print('speed: ', speed)
-        
-
-        if self.direction == "CCW":
-            self.drive(speed)
-            print(speed)
-        elif self.direction == "CW":
-            self.drive(-speed)
-            print(-speed)
+        #publish to robot's drive
+        print("[INFO]: SPEED: ", speed)
+        self.drive(speed)
 
     #Method to publish output
     def drive(self,drive):
@@ -144,10 +147,17 @@ class MOVO_output(object):
                 print("Linear: ", drive)
                 self.motion_pub.publish(self.twist_body(drive, 0, 0))
             elif self.state == 'Angular':
+                if self.direction == "CCW":
+                  drive = drive
+                elif self.direction == "CW":
+                  drive = -drive
+                else:
+                  drive = 0
+
                 print("Angular:  ", drive)
                 self.motion_pub.publish(self.twist_body(0, 0, drive))
             else:
-                #print("MOVO Output error: Please check a state command")
+                #print("[ERROR]: Please check a state command")
                 pass
 
     #Speed message constructor
@@ -173,14 +183,9 @@ class MOVO_output(object):
                 diff_z = abs(diff_z)
             else:
                 diff_z = 360-diff_z
-
-        #print('cur: ', cur_list[2])
-        #print('tar: ', tar_list[2])
-        #print('diff: ',diff_z)
         
         return diff_z
 
-    #Wrongly calculated
     def linear_euclidean(self, cur_list, tar_list):
         #First, find the different
         diff_x = tar_list[0] - cur_list[0]
@@ -209,8 +214,6 @@ class MOVO_output(object):
         t3 = +2.0 * (w * z + x * y)
         t4 = +1.0 - 2.0 * (y * y + z * z)
         Z = math.degrees(math.atan2(t3, t4))
-
-        #print('Q2E Z: ', Z)
 
         #Convert into a range of 0 to 360
         if Z < 0:
@@ -256,15 +259,13 @@ class MOVO_output(object):
         elif value.state == 'Angular':
             self.max_speed = self.ang_speed
         else:
-            #print('Error: Please check robot state')
+            #print("[ERROR]: Please check robot state")
             pass
 
     #Active configuration
     def aconf_cb(self, value):
         self.lin_speed = value.x_vel_limit_mps
         self.ang_speed = value.yaw_rate_limit_rps
-        #print(self.lin_speed)
-        #print(self.ang_speed)
 
     #slow down when it reaches a certain distance
     def decel_rate(self, diff, max_diff):
@@ -275,8 +276,6 @@ class MOVO_output(object):
             result = 1.0-(num/denom)
         else:
             result = 1.0
-        
-        #print('Decel rate: ', result)
         return result
 
 

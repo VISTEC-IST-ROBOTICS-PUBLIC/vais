@@ -8,7 +8,7 @@ class Learning(object):
         self.signal = ICO_Signal()      #Instantiation from signal module. 
         self.res_dict = {}              #Store results in Python dict.
 
-    def ico(self, time, diff_time, state, l_rate , sig_dict, prev_dict):
+    def ico(self, time, diff_time, state, l_rate , sig_dict, prev_dict, move):
         if prev_dict:
             #Retrieve each object ID in dictionary
             for key in sig_dict:
@@ -16,10 +16,16 @@ class Learning(object):
                     filename = self.data.filename(key, state)
                     self.data.filecheck(filename)
                     p_weight = self.data.load(filename)
-                    result = (sig_dict[key][0] * p_weight + sig_dict[key][1])
-                    delta = self.signal.truncated(l_rate*(sig_dict[key][1] - prev_dict[key][1])*sig_dict[key][0]/diff_time)
+                    #Object D. + Predict + Reflex
+                    result = (p_weight * sig_dict[key][0] + p_weight * sig_dict[key][1] * p_weight + sig_dict[key][2])
+                    delta = self.signal.truncated(l_rate*(sig_dict[key][2] - prev_dict[key][2])*sig_dict[key][1]/diff_time)
+                    #To avoid an object bouncing back and forth which causes the robot to rapidly changes (by suddenly increasing and decreasing) it speed back and forth
+                    if delta < 0.0:
+                        delta = 0
                     new_weight = self.signal.truncated((p_weight+delta))
-                    self.data.save(filename, time, new_weight, sig_dict[key][0], sig_dict[key][1], delta, result)
+                    #Only log value when the robot moves
+                    if move == True:
+                        self.data.save(filename, time, new_weight, sig_dict[key][0], sig_dict[key][1], sig_dict[key][2], delta, result)
                     self.res_dict[key] = result
                 else:
                     print("[ERROR]: Cannot obtain any object ID from signal dictionary")

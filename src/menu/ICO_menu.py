@@ -24,11 +24,11 @@ class Menu(object):
 
     def default_value(self):                                                                        #Default values
         msg = vais_param()
-        msg.state = 'Linear'
+        msg.state = 'Angular'
         msg.e_object = 0.5
-        msg.p_object = 2
-        msg.r_object = 4
-        msg.l_rate = 0.05
+        msg.p_object = 1.5
+        msg.r_object = 3
+        msg.l_rate = 0.01
         msg.goal_x = 5
         msg.goal_y =0
         msg.goal_z = 90
@@ -97,7 +97,7 @@ class Menu(object):
         if (rcv_input == 1):
             #experiment
             print("Experiment dynamic parameters are loaded")
-            client.update_configuration({"x_vel_limit_mps":1.5, "accel_limit_mps2":1.5, "yaw_rate_limit_rps":2.35, "yaw_accel_limit_rps2": 3.14})
+            client.update_configuration({"x_vel_limit_mps":1.5, "accel_limit_mps2":1.5, "yaw_rate_limit_rps":3.14, "yaw_accel_limit_rps2": 2.35})
         else:
             #safety
             print("Safety parameters are loaded")

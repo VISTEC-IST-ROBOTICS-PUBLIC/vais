@@ -11,7 +11,7 @@ from nav_msgs.msg import Odometry
 import rospy
 import math
 import numpy as np
-import sys
+import time
 
 class MOVO_output(object):
     def __init__(self):
@@ -89,8 +89,11 @@ class MOVO_output(object):
     #main
     def output_main(self, state, ico_out, goal_odom):
         self.ref_capture(goal_odom)  
-        self.target(state, ico_out)
-       
+        if self.goal_odom:
+            self.target(state, ico_out)
+        else:
+            pass
+
     def target(self, state, ico_out):
     
         #Tracking
@@ -105,7 +108,7 @@ class MOVO_output(object):
         else:
             diff = 0
             threshold = 0
-            print("[ERRROR]: Please check input state")
+            print("[ERROR]: Please check input state")
 
         print('cur: ', self.cur_odom)
         print('tar: ', self.tar_odom)
@@ -131,7 +134,7 @@ class MOVO_output(object):
         else:
             print("[INFO]: DONE")
             speed = 0
-            sys.sleep(10)
+            time.sleep(10)
 
         #publish to robot's drive
         print("[INFO]: SPEED: ", speed)

@@ -31,6 +31,7 @@ class ICO_Signal(object):
         square_z = np.power(diff_z, 2)
 
         euc_result = self.truncated(math.sqrt(square_x+square_y+square_z))
+        print("[INFO]: EUCLIDEAN OBJECT: ", euc_result)
         return euc_result
 
     def obj_detection(self,cur_list):

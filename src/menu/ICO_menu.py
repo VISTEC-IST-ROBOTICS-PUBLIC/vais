@@ -29,7 +29,7 @@ class Menu(object):
         msg.p_object = 1.5
         msg.r_object = 3
         msg.l_rate = 0.01
-        msg.goal_x = 5
+        msg.goal_x = 4
         msg.goal_y =0
         msg.goal_z = 90
         msg.decel_factor = 0.5

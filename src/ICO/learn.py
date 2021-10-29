@@ -7,6 +7,7 @@ class Learning(object):
         self.data = Data()              #Instantiation from data management module.
         self.signal = ICO_Signal()      #Instantiation from signal module. 
         self.res_dict = {}              #Store results in Python dict.
+        self.p_fact = 0.01              #Predictive factor in result (In this case, predictive signal becomes less significant since we have the other signal (object detection) regulating an initial speed)
 
     def ico(self, time, diff_time, state, l_rate , sig_dict, prev_dict, move):
         if prev_dict:
@@ -17,7 +18,7 @@ class Learning(object):
                     self.data.filecheck(filename)
                     p_weight = self.data.load(filename)
                     #Object D. + Predict + Reflex
-                    result = (p_weight * sig_dict[key][0] + p_weight * sig_dict[key][1] * p_weight + sig_dict[key][2])
+                    result = (p_weight * sig_dict[key][0] + self.p_fact * p_weight * sig_dict[key][1] * p_weight + sig_dict[key][2])
                     delta = self.signal.truncated(l_rate*(sig_dict[key][2] - prev_dict[key][2])*sig_dict[key][1]/diff_time)
                     #To avoid an object bouncing back and forth which causes the robot to rapidly changes (by suddenly increasing and decreasing) it speed back and forth
                     if delta < 0.0:

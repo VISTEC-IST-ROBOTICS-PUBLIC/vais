@@ -128,7 +128,10 @@ class Core(object):
             #ETL from msg to dict for each detected markers
             for index, value in enumerate(alvar_pt.markers):
                 #Avoid nan value and unnecessary alvar_tag
-                if value.id < 1 or value.id > 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
+                #if value.id < 1 or value.id > 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
+                
+                #This method is safer to specfied a single alvar_tag to avoid a ghosting tag
+                if value.id != 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z): 
                     pass
                 else:
                     self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]

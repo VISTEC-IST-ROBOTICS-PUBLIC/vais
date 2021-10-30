@@ -12,7 +12,6 @@ class Core(object):
 
     def __init__(self):
         #Initial Parameters    
-        self.pos_dict = {}
         self.ref_dict = {}
         self.sig_dict = {}
         self.prev_dict = {}
@@ -44,7 +43,7 @@ class Core(object):
         self.ref_capture(pos_dict)
         if self.ref_dict:                            
             #Signal generation to product predictive, reflexive signal       
-            self.signal_generation(self.ref_dict, self.pos_dict)
+            self.signal_generation(self.ref_dict, pos_dict)
 
             if self.prev_time:
                 diff = self.diff_time(time)
@@ -115,14 +114,15 @@ class Core(object):
                 
             else:
                 #This case means we already have the object on scene, but somehow disappeared from the screen at a current time.
-                #Might need a counter in case there is a few missing iteration
-                print("[Error]: current POS is not found, please check the object (SET PREDICT:0, REFLEX: 1")
+                print("[Error]: current POS ",key," is not found, please check the object (SET OBJ_DET:0, PREDICT:0, REFLEX: 1")
                 self.sig_dict[key] = [0, 1, 1]
                 time.sleep(10)
                 self.shutdown_pub.publish(True)
 
     def alvar_cb(self, alvar_pt):                                                                       #alvar always keep spinning its callback
         time = alvar_pt.header.stamp
+        #This pos dict is a temporary dictionary to keep current position updated.
+        pos_dict = {}
 
         if alvar_pt.markers:
             #ETL from msg to dict for each detected markers
@@ -131,7 +131,7 @@ class Core(object):
                 #if value.id < 1 or value.id > 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
                 
                 #This method is safer to specfied a single alvar_tag to avoid a ghosting tag
-                if value.id != 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z): 
+                if value.id != 10 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z): 
                     pass
                 else:
                     self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]

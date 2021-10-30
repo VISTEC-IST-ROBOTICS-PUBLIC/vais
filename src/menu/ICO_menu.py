@@ -24,15 +24,15 @@ class Menu(object):
 
     def default_value(self):                                                                        #Default values
         msg = vais_param()
-        msg.state = 'Angular'
-        msg.e_object = 0.5
-        msg.p_object = 1.5
-        msg.r_object = 3
+        msg.state = 'Linear'
+        msg.e_object = 1
+        msg.p_object = 3
+        msg.r_object = 7
         msg.l_rate = 0.01
         msg.goal_x = 4
         msg.goal_y =0
         msg.goal_z = 90
-        msg.decel_factor = 0.5
+        msg.decel_factor = 0.1                                                                      #90% of goal reach
         self.vais_pub.publish(msg)
 
     def input_ver(self, sys_version, st_value):                                                     #Recieves input from user, check python version in a machine.

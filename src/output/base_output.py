@@ -75,16 +75,22 @@ class MOVO_output(object):
         else:
             self.direction = "CCW"
 
+        #2D position and one yaw orientation
         pos_x = self.ref_odom[0]+goal_list[0]
         pos_y = self.ref_odom[1]+goal_list[1]
         orient_z = self.ref_odom[2]+goal_list[2]
 
+        #Conversion from -180 to 180 into 0 to 360 degree range.
         if orient_z < 0 or orient_z > 360:
             orient_z = orient_z%360
         else:
             orient_z
 
         self.tar_odom = [pos_x, pos_y, orient_z]
+
+    #Manually press stop for learning mode
+    def learn_op(self, state, ico_out):
+        pass
 
     #main
     def output_main(self, state, ico_out, goal_odom):
@@ -94,21 +100,32 @@ class MOVO_output(object):
         else:
             pass
 
-    def target(self, state, ico_out):
-    
-        #Tracking
+    def track(self, state):
+        #Tracking difference between reference and goal wrt time. We use 2D Euclidean distance for linear movement and angle difference for angular movement.
         if state == "Linear":
             diff = self.linear_euclidean(self.cur_odom, self.tar_odom)
             max_diff = self.linear_euclidean(self.ref_odom, self.tar_odom)
             threshold = 0.02*max_diff
+
         elif state == "Angular":
             diff = self.angle_difference(self.cur_odom, self.tar_odom)
             max_diff = self.angle_difference(self.ref_odom, self.tar_odom)
             threshold = 0.02*max_diff
         else:
             diff = 0
+            max_diff = 0
             threshold = 0
             print("[ERROR]: Please check input state")
+            
+            #Pause the operation to see the issue
+            time.sleep(10)
+
+        
+        return diff, max_diff, threshold
+
+    def target(self, state, ico_out):
+        
+        diff, max_diff, threshold = self.track(state)
 
         print('cur: ', self.cur_odom)
         print('tar: ', self.tar_odom)

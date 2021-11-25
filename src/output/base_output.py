@@ -30,6 +30,7 @@ class MOVO_output(object):
         self.state = None
         self.odom_capture = False
         self.decel_factor = None
+        self.min_cap = 0.05
 
         #Odometry list [pos_x, pos_y, orient_z]
         self.ref_odom = []
@@ -51,21 +52,26 @@ class MOVO_output(object):
         rospy.Subscriber('/ico/output', Float32, self.ico_cb, queue_size = 1)
 
     #Reference position must be captured via an Odom capture signal.
-    def ref_capture(self, goal_odom):
+    def ref_capture(self):
         if self.odom_capture == True:
-
             self.ref_odom = self.cur_odom[:]
             print("[INFO]: Reference Odometry is collected at: ", self.ref_odom)
-            #Once a reference is obtained, generates the target odom.
-            self.target_odom(goal_odom)
-            print("[INFO]: Target Odometry is generated at: ", self. tar_odom)
             self.odom_capture=False
             #Signal back to make ref_odom unrewritable
             self.odom_capture_pub.publish(self.odom_capture)
         else:
             #print("[INFO]: Waiting for a reference signal")
             pass
-       
+
+    #Goal is generated   
+    def goal(self, goal_odom):
+        if self.ref_odom:
+            #Once a reference is obtained, generates the target odom.
+            self.target_odom(goal_odom)
+            print("[INFO]: Target Odometry is generated at: ", self. tar_odom)
+        else:
+            pass
+
     #Target goal given by user
     def target_odom(self, goal_list):
         
@@ -89,16 +95,19 @@ class MOVO_output(object):
         self.tar_odom = [pos_x, pos_y, orient_z]
 
     #Manually press stop for learning mode
-    def learn_op(self, state, ico_out):
-        pass
+    def learn_op(self, ico_out):
+        self.ref_capture()
+        self.no_target(ico_out)
+
+    def exec_op(self, state, ico_out):
+        self.ref_capture()
+        self.goal()
+        self.target(state, ico_out)
 
     #main
+    ##This has to be rewritten to support menu choice (as noted)
     def output_main(self, state, ico_out, goal_odom):
-        self.ref_capture(goal_odom)  
-        if self.goal_odom:
-            self.target(state, ico_out)
-        else:
-            pass
+        self.learn_op(ico_out)
 
     def track(self, state):
         #Tracking difference between reference and goal wrt time. We use 2D Euclidean distance for linear movement and angle difference for angular movement.
@@ -120,39 +129,47 @@ class MOVO_output(object):
             #Pause the operation to see the issue
             time.sleep(10)
 
-        
-        return diff, max_diff, threshold
-
-    def target(self, state, ico_out):
-        
-        diff, max_diff, threshold = self.track(state)
-
-        print('cur: ', self.cur_odom)
-        print('tar: ', self.tar_odom)
-        print('diff: ', diff)
-        print('thres: ', threshold)
-
         if diff >= threshold:
-                max = self.max_speed
-                ico = float(self.ico_out)
-                #deceleration rate triggers when the robot moves pass through the certain threshold
-                rate = self.decel_rate(diff, max_diff)
-                ico_factor = max*ico
-                #When a caculated factor is generated beyond the max speed, capped it with max speed (It means final speed is 0).
-                if ico_factor > max:
-                    ico_factor = max
-                speed = (max-(ico_factor))*rate
-                #min speed cap, else MOVO moves too slow to approach, around 2.5% of the robot's max speed
-                min_cap = 0.05
-                if speed < min_cap:
-                    speed = 0
-                    diff = 0
+            max = self.max_speed
+            rate = self.decel_rate(diff, max_diff)
 
         else:
-            print("[INFO]: DONE")
-            speed = 0
-            time.sleep(10)
+            max = 0
+            rate = 0
 
+        
+        return max, rate
+
+
+    #This max has an issue
+    def no_target(self, ico_out):
+        #Force set the direction to counterclockwise
+        self.direction  = "CCW"
+        max = self.max_speed
+        ico_factor = max*ico_out
+        if ico_factor > max:
+            ico_factor = max
+        speed = max - ico_factor
+
+        #publish to robot's drive
+        print("[INFO]: SPEED: ", speed)
+        self.drive(speed)
+
+    #rewrite target
+    def target(self, state, ico_out):
+
+
+        max, rate = self.track(state)
+        ico_factor = max*ico_out
+
+        #When a caculated factor is generated beyond the max speed, capped it with max speed (It means final speed is 0).
+        if ico_factor > max:
+            ico_factor = max
+            speed = (max-(ico_factor))*rate
+
+        if speed < self.min_cap:
+            speed = 0
+        
         #publish to robot's drive
         print("[INFO]: SPEED: ", speed)
         self.drive(speed)

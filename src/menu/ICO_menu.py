@@ -24,7 +24,7 @@ class Menu(object):
 
     def default_value(self):                                                                        #Default values
         msg = vais_param()
-        msg.state = 'Linear'
+        msg.state = 'Angular'
         msg.e_object = 1
         msg.p_object = 3
         msg.r_object = 7

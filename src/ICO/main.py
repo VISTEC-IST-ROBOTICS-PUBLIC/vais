@@ -116,6 +116,7 @@ class Core(object):
                 #This case means we already have the object on scene, but somehow disappeared from the screen at a current time.
                 print("[Error]: current POS ",key," is not found, please check the object (SET OBJ_DET:0, PREDICT:0, REFLEX: 1")
                 self.sig_dict[key] = [0, 1, 1]
+                print("[INFO]: Object lost, Pause")
                 time.sleep(10)
                 self.shutdown_pub.publish(True)
 
@@ -131,11 +132,11 @@ class Core(object):
                 #if value.id < 1 or value.id > 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
                 
                 #This method is safer to specfied a single alvar_tag to avoid a ghosting tag
-                if value.id != 10 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z): 
+                if value.id != 14 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z): 
                     pass
                 else:
-                    self.pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
-            self.main(time, self.pos_dict)
+                    pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
+            self.main(time, pos_dict)
             #print("[INFO]: ALVAR #: ", value.id)
         else:
             #Case of no markers

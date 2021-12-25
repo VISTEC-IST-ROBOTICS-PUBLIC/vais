@@ -137,7 +137,7 @@ class Core(object):
                 else:
                     pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
             self.main(time, pos_dict)
-            #print("[INFO]: ALVAR #: ", value.id)
+            print("[INFO]: ALVAR #: ", value.id)
         else:
             #Case of no markers
             print ("[ERROR]: No alvar markers detected")

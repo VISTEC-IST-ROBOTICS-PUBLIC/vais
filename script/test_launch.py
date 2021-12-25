@@ -2,7 +2,7 @@
 
 import rospy
 #from test.angle_conversion import test
-from test.object_euclidean import Euclidean_Test
+from test.action import TEST_Action
 
 if __name__ == '__main__':
    print('Initialize ICO test node')
@@ -10,7 +10,8 @@ if __name__ == '__main__':
    rospy.init_node('ICO_test')
    try:
      #angle_test = test()
-     euc_test = Euclidean_Test()
+     #euc_test = Euclidean_Test()
+     act_test = TEST_Action()
      rospy.spin()
 
    except rospy.ROSInterruptException:

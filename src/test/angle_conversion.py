@@ -30,7 +30,7 @@ class test(object):
         t4 = +1.0 - 2.0 * (y * y + z * z)
         Z = math.degrees(math.atan2(t3, t4))
 
-	print(Z)
+	    #print(Z)
 
         #Service robot doesn't have roll and pich rotation, Only yaw is active
         return Z

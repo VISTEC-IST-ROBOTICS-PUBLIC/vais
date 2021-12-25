@@ -1,68 +1,108 @@
 #!/usr/bin/env python
 
 import rospy
+import math
 from output.base_output import MOVO_output
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from ICO.data_management import Data
 from std_msgs.msg import Bool, Float32
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
+import time
 
 class Demo1(object):
     def __init__(self):
 
+        #Instantiation
+        self.move_cmd = Twist()
+        self.weight_load = Data()
+        self.output = MOVO_output()
+
         #Publishers
         self.odom_capture_pub = rospy.Publisher('/signal/odom_capture',Bool, queue_size = 1)
         self.move_pub = rospy.Publisher('/robot/move',Bool, queue_size = 1)
-        self.ico_pub = rospy.Publisher('/ico/output', Float32, queue_size = 1)
+        self.motion_pub = rospy.Publisher('/movo/cmd_vel', Twist, queue_size=1, latch=False)
+ 
+        #subscriber(s)
+        rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.output.odom_cb, queue_size = 1)
 
-        #Subscribers
-        rospy.Subscriber('/ar_pose_marker', AlvarMarkers, self.alvar_cb, queue_size=1)
-
-        #Pair dictionary [ID: ico]
-        self.id_dict = {}
-
-    # Move by meter unit
+    # Move by x meter(s)
     def forward(self, target):
-        op = MOVO_output()
-        state = 'Angular'
-        goal = [target,0,0]
-        if self.ico_out:
-            op.output_main(state, self.ico_out,goal)
+        state = 'Linear'
+        #Retreive marker ID, ETL to weight (One-time ALVAR markers obtained)
+        alvar_msg = rospy.wait_for_message('/ar_pose_marker', AlvarMarkers)        
+        #return highest weight among multiple items
+        weight_result = self.etl_msg(alvar_msg, state)
 
+        print(weight_result)
+
+        #alternative method to receive message
+        #self.output.exec_op(state, target, weight_result)
+       
+
+        #Write more on output module
+        #self.output.motion_pub.publish(self.output.twist_body(speed_result, 0,0))
+
+
+    #Look through this later
     # + is a CCW rotaion, - is a CW rotation.
     def turn(self, target):
-        op = MOVO_output()
         state = 'Angular'
-        goal = [0,0,target]
-        if self.ico_out:
-            op.output_main(state, self.ico_out,goal)
-
-    #Test input    
-    def main(self):
-        self.forward(0.5)
-        self.turn(90)
-        self.forward(1)
-        self.turn(-90)
-
-    #Return a maximum ico_output value
-    def alvar_cb(self, alvar_pt):
-        time = alvar_pt.header.stamp
-        if alvar_pt.markers:
-            for value in enumerate(alvar_pt.markers):
-                if value.id < 17:
-                    ico = self.load_ico(value.id)
-                    self.id_dict[value.id] = [ico]
-
-            find_max = max(self.id_dict.keys(), key=lambda k:self.id_dict[k])
-            self.ico_out = self.id_dict[find_max]
-
-        else:
-            #print('Please check alvar callback')
-            pass
+        speed_result = 0
+        #check this?
+        self.output.motion_pub.publish(self.output.twist_body(0,0, speed_result))
            
-    #Load last recent stored ico_output
-    def load_ico(self, id):
-        dat = Data()
-        name = dat.filename(id)
-        ico_output = dat.load_op(name)
-        return ico_output
+           
+    #Load weight from result folder
+    def load(self,state,id):
+        result = self.weight_load.load_result(state,id)
+        return result
 
+    #Extract-Transform-Load from Alvar msg to weight
+    def etl_msg(self, msg, state):
+        etl_weight = {}
+        if msg.markers:
+            #ETL from msg to dict for each detected markers
+            for index, value in enumerate(msg.markers):
+                #Avoid nan value and unnecessary alvar_tag
+                if value.id < 1 or value.id > 10 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
+                    pass
+                else:
+                    weight = self.load(state, value.id)
+                    etl_weight[value.id] = weight
+            
+            print("Weight dict: ", etl_weight)
+
+            #return max available weight 
+            find_max = max(etl_weight.keys(), key=lambda k:etl_weight[k])                         #Use winner takes all (most sensitve values are the chosen result to drive the robot)
+            max_value = etl_weight[find_max]
+            return max_value
+            
+        else:
+            #Case of no markers
+            print ("[ERROR]: No alvar markers detected")
+            pass
+
+    def demo_waypoint(self):
+        pass
+
+if __name__ == "__main__":
+    rospy.init_node("demo1")
+    Demo = Demo1()
+    #Test ID_1 from result
+    #Demo.load("Angular",1)
+    #Demo.load("Linear",1)
+    print("Dummy2")
+    Demo.forward(1)
+    rospy.spin()
+
+#Every trigger    
+#See once
+#Load weight (if multi weight, get once)
+
+#Loop check with Odom
+    #Finish each task
+#Finish
+
+#active config
+#set to MOVO drive

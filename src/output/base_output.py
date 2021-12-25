@@ -63,6 +63,24 @@ class MOVO_output(object):
             #print("[INFO]: Waiting for a reference signal")
             pass
 
+    #Manually press stop for learning mode
+    def learn_op(self, ico_out):
+        self.ref_capture()
+        self.no_target(ico_out)
+
+    #Something dummy
+    def exec_op(self, state, target, ico_out):
+        self.odom_capture == True
+        self.ref_capture()
+        self.goal(target)
+        print("Dummy1")
+        self.target(state, ico_out)
+        time.sleep(10000)
+
+    #Learning main
+    def output_main(self, state, ico_out, goal_odom):
+        self.learn_op(ico_out)
+
     #Goal is generated   
     def goal(self, goal_odom):
         if self.ref_odom:
@@ -94,23 +112,11 @@ class MOVO_output(object):
 
         self.tar_odom = [pos_x, pos_y, orient_z]
 
-    #Manually press stop for learning mode
-    def learn_op(self, ico_out):
-        self.ref_capture()
-        self.no_target(ico_out)
-
-    def exec_op(self, state, ico_out):
-        self.ref_capture()
-        self.goal()
-        self.target(state, ico_out)
-
-    #main
-    ##This has to be rewritten to support menu choice (as noted)
-    def output_main(self, state, ico_out, goal_odom):
-        self.learn_op(ico_out)
-
     def track(self, state):
         #Tracking difference between reference and goal wrt time. We use 2D Euclidean distance for linear movement and angle difference for angular movement.
+        #The issue of this simple method (only rely on robot's odom) is when the robot has an accumulative error (e.g. added up error)
+        #However, we use the simple method to show as we focus on proving the concept of ICO so that the robot can learn to find the speed for each object by itself.
+
         if state == "Linear":
             diff = self.linear_euclidean(self.cur_odom, self.tar_odom)
             max_diff = self.linear_euclidean(self.ref_odom, self.tar_odom)
@@ -136,14 +142,11 @@ class MOVO_output(object):
         else:
             max = 0
             rate = 0
-
-        
+     
         return max, rate
 
-
-    #This max has an issue
     def no_target(self, ico_out):
-        #Force set the direction to counterclockwise
+        #Force direction to counterclockwise (learning)
         self.direction  = "CCW"
         max = self.max_speed
         ico_factor = max*ico_out

@@ -90,21 +90,28 @@ class Data(object):
             time.sleep(30)
             sys.exit()
 
-    #Load ICO output information from the target file.
-    def load_op(self, filename):
-        path = self.filepath(filename)
+    
+    #Weight load on result file
+    def load_result(self, state, id):
+        #result file is in a result sub folder (quick solution)
+        result_file = "result/"+state+".csv"
+        path = self.filepath(result_file)
+        print(path)
         try:        
             with open(path, 'r') as f:
                 try:
-                    last_line = f.readlines()[-1]
+                    target_line = id
+                    last_line = f.readlines()[target_line]
                     line = last_line.split(',')
-                    weight = float(line[6])
+                    #Read Average element
+                    weight = float(line[7])
                     return weight
                 except:
-                    print("[INFO]: No trace of ICO output, return 0.0")
-                    return 0.0
+                    print("[ERROR]: Result weight does not exist, Please check a result file")
+                    time.sleep(30)
+                    sys.exit()
 
         except:
-            print("[ERRROR]: Cannot load ICO output from: ", filename)
+            print("[ERRROR]: Cannot load weight from: ", result_file)
             time.sleep(30)
             sys.exit()

@@ -30,8 +30,27 @@ class Demo1(object):
 
         #speed conversion
         speed = self.speed_conversion(weight_result, state)
-
+    
         self.output.move_forward(target, speed)
+        self.output.motion_stop()
+
+        time.sleep(1)
+
+    def backward(self, target):
+        state = "Linear"
+        #Retreive marker ID, ETL to weight (One-time ALVAR markers obtained)
+        alvar_msg = rospy.wait_for_message('/ar_pose_marker', AlvarMarkers)        
+        #return highest weight among multiple items
+        weight_result = self.etl_msg(alvar_msg, state)
+
+        #speed conversion
+        speed = self.speed_conversion(weight_result, state)
+    
+        self.output.move_backward(target, speed)
+        self.output.motion_stop()
+
+        time.sleep(1)
+
 
     #Look through this later
     # + is a CCW rotaion, - is a CW rotation.
@@ -47,8 +66,11 @@ class Demo1(object):
 
         if target>=0:
             self.output.rotate_clock(target, speed)
+            self.output.motion_stop()
         else:
             self.output.rotate_anticlock(target,speed)
+            self.output.motion_stop()
+        time.sleep(1)
 
            
     def speed_conversion(self,weight, state):
@@ -122,11 +144,20 @@ if __name__ == "__main__":
     Demo = Demo1()
     #Set param to experimental mode
     Demo.dynamic_parameters(1)
-    print("Dummy2")
-    Demo.forward(100.0)
-    #Demo.turn(90)
-    #Demo.forward(3.5)
-    #Demo.turn(-180)
+    
+    time.sleep(10)
+    print("Start moving")
+    Demo.forward(1.7)
+    Demo.turn(90)
+    Demo.forward(3.1)
+    print("Pause")
+    time.sleep(20)
+    print("Resume")
+    Demo.turn(-180)
+    #time.sleep(1000)
+    Demo.forward(3.0)
+    Demo.turn(90)
+    Demo.backward(1.7)
     rospy.signal_shutdown(True)
     rospy.spin()
 

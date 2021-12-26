@@ -15,7 +15,7 @@ class BaseMotion(object):
 
         # set robot mode to active base motion
         self._cfg_cmd = ConfigCmd()
-        self._cfg_pub = rospy.Publisher('/movo/gp_command', ConfigCmd, queue_size=10)
+        #self._cfg_pub = rospy.Publisher('/movo/gp_command', ConfigCmd, queue_size=10)
 
         # for motion sequence command request
         self.dist_cmdList = []
@@ -42,7 +42,7 @@ class BaseMotion(object):
         self._cfg_cmd.gp_cmd = 'GENERAL_PURPOSE_CMD_SET_OPERATIONAL_MODE'
         self._cfg_cmd.gp_param = TRACTOR_REQUEST
         self._cfg_cmd.header.stamp = rospy.get_rostime()
-        self._cfg_pub.publish(self._cfg_cmd)
+        #self._cfg_pub.publish(self._cfg_cmd)
         rospy.sleep(0.1)
 
         twist_cmd = Twist()
@@ -106,7 +106,8 @@ class BaseMotion(object):
             if vel_cmd[i] == 0.0:
                 duration_temp[i] = 0.0
             else:
-                dist_cmd[i] = math.radians(dist_cmd[i])
+                if i ==2:
+                    dist_cmd[i] = math.radians(dist_cmd[i])
                 duration_temp[i] = math.fabs(dist_cmd[i] / vel_cmd[i])
 
         duration = max(duration_temp)
@@ -169,7 +170,7 @@ class BaseMotion(object):
         self._cfg_cmd.gp_cmd = 'GENERAL_PURPOSE_CMD_NONE'
         self._cfg_cmd.gp_param = 0
         self._cfg_cmd.header.stamp = rospy.get_rostime()
-        self._cfg_pub.publish(self._cfg_cmd)
+        #self._cfg_pub.publish(self._cfg_cmd)
 
         rospy.logdebug("Stopping velocity command to movo base from BaseVelTest class ...")
         try:
@@ -183,34 +184,6 @@ class BaseMotion(object):
             pass
 
 
-def main():
-    rospy.init_node('base_vel_test')
-    b_test = BaseMotionTest()
-
-    print ("start base test")
-
-    b_test.move_backward(0.2)
-    b_test.motion_stop(0.1)
-    b_test.move_forward(0.2, 0.3)
-    b_test.motion_stop()
-
-    b_test.move_left(0.1)
-    b_test.motion_stop()
-    b_test.move_right(0.1, 0.2)
-    b_test.motion_stop()
-
-    b_test.rotate_clock(30)
-    b_test.motion_stop()
-    b_test.rotate_anticlock(30, 45)
-    b_test.motion_stop()
-
-    # # define motion sequence
-    # b_test.add_motion_to_list([0.1, 0.0, 0.0])
-    # b_test.add_motion_to_list([0.0, 0.1, -15.0])
-    # b_test.add_motion_to_list([-0.1, -0.1, 15])
-    # b_test.move_sequence()
-    # b_test.motion_stop(2)
-
 
 if __name__ == "__main__":
-    main()
+    pass

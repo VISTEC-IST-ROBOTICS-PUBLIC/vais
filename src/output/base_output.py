@@ -68,7 +68,7 @@ class MOVO_output(object):
         self.ref_capture()
         self.no_target(ico_out)
 
-    #Something dummy
+    #Trace on this
     def exec_op(self, state, target, ico_out):
         self.odom_capture == True
         self.ref_capture()
@@ -145,20 +145,7 @@ class MOVO_output(object):
      
         return max, rate
 
-    def no_target(self, ico_out):
-        #Force direction to counterclockwise (learning)
-        self.direction  = "CCW"
-        max = self.max_speed
-        ico_factor = max*ico_out
-        if ico_factor > max:
-            ico_factor = max
-        speed = max - ico_factor
-
-        #publish to robot's drive
-        print("[INFO]: SPEED: ", speed)
-        self.drive(speed)
-
-    #rewrite target
+    #Target method is used in execute to automatically stop the robot at a certain waypoint
     def target(self, state, ico_out):
 
 
@@ -176,6 +163,21 @@ class MOVO_output(object):
         #publish to robot's drive
         print("[INFO]: SPEED: ", speed)
         self.drive(speed)
+
+    #No target method is used in learning to manually start-stop the robot when it reaches the desired destination/angle
+    def no_target(self, ico_out):
+        #Force direction to counterclockwise (learning)
+        self.direction  = "CCW"
+        max = self.max_speed
+        ico_factor = max*ico_out
+        if ico_factor > max:
+            ico_factor = max
+        speed = max - ico_factor
+
+        #publish to robot's drive
+        print("[INFO]: SPEED: ", speed)
+        self.drive(speed)
+
 
     #Method to publish output
     def drive(self,drive):
@@ -200,7 +202,7 @@ class MOVO_output(object):
                 #print("[ERROR]: Please check a state command")
                 pass
 
-    #Speed message constructor
+    #MOVO Speed message constructor
     def twist_body(self, linear_x, linear_y, angular_z):
         #Axis X/Y, linear move
         self.move_cmd.linear.x = linear_x
@@ -209,6 +211,7 @@ class MOVO_output(object):
         self.move_cmd.angular.z = angular_z
         return self.move_cmd
 
+    #Calculation of the angle difference between current and target angle
     def angle_difference(self, cur_list, tar_list):
         diff_z = cur_list[2] - tar_list[2]
 
@@ -226,6 +229,7 @@ class MOVO_output(object):
         
         return diff_z
 
+    #Calculation of the difference in linear distance
     def linear_euclidean(self, cur_list, tar_list):
         #First, find the different
         diff_x = tar_list[0] - cur_list[0]

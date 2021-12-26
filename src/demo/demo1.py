@@ -2,6 +2,7 @@
 
 import rospy
 import math
+import dynamic_reconfigure.client
 from output.base_output import MOVO_output
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from ICO.data_management import Data
@@ -9,6 +10,7 @@ from std_msgs.msg import Bool, Float32
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 import time
+
 
 class Demo1(object):
     def __init__(self):
@@ -84,7 +86,26 @@ class Demo1(object):
             pass
 
     def demo_waypoint(self):
+        #set a MOVO to the experiment parameters;
+        self.dynamic_parameters(1)
+
+        #set a MOVO to the safety parameters again
+        self.dynamic_parameters(0)
         pass
+
+    def dynamic_parameters(self, input):                                                                   #Read dynamic parameters from the robots and rewritten with defined values.
+        if (input == 1):
+            client = dynamic_reconfigure.client.Client("movo/movo_driver", timeout=20)
+
+            #experiment
+            print("[INFO]: Experiment dynamic parameters are loaded")
+            client.update_configuration({"x_vel_limit_mps":1.5, "accel_limit_mps2":1.5, "yaw_rate_limit_rps":3.14, "yaw_accel_limit_rps2": 2.35})
+        elif (input ==0):
+            #safety
+            print("[INFO]: Safety parameters are loaded")
+            client.update_configuration({"x_vel_limit_mps":0.5, "accel_limit_mps2":1.0, "yaw_rate_limit_rps":1.0, "yaw_accel_limit_rps2": 1.0})
+        else:
+            print("[ERROR]: Please check input")
 
 if __name__ == "__main__":
     rospy.init_node("demo1")

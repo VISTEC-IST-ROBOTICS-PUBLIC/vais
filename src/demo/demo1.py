@@ -3,12 +3,12 @@
 import rospy
 import math
 import dynamic_reconfigure.client
-from output.base_output import MOVO_output
+from output.base_motion import BaseMotion
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from ICO.data_management import Data
-from std_msgs.msg import Bool, Float32
-from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
+from movo_msgs.msg import *
+
 import time
 
 
@@ -18,43 +18,53 @@ class Demo1(object):
         #Instantiation
         self.move_cmd = Twist()
         self.weight_load = Data()
-        self.output = MOVO_output()
-
-        #Publishers
-        self.odom_capture_pub = rospy.Publisher('/signal/odom_capture',Bool, queue_size = 1)
-        self.move_pub = rospy.Publisher('/robot/move',Bool, queue_size = 1)
-        self.motion_pub = rospy.Publisher('/movo/cmd_vel', Twist, queue_size=1, latch=False)
- 
-        #subscriber(s)
-        rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.output.odom_cb, queue_size = 1)
+        self.output = BaseMotion()
 
     # Move by x meter(s)
     def forward(self, target):
-        state = 'Linear'
+        state = "Linear"
         #Retreive marker ID, ETL to weight (One-time ALVAR markers obtained)
         alvar_msg = rospy.wait_for_message('/ar_pose_marker', AlvarMarkers)        
         #return highest weight among multiple items
         weight_result = self.etl_msg(alvar_msg, state)
 
-        print(weight_result)
+        #speed conversion
+        speed = self.speed_conversion(weight_result, state)
 
-        #alternative method to receive message
-        #self.output.exec_op(state, target, weight_result)
-       
-
-        #Write more on output module
-        #self.output.motion_pub.publish(self.output.twist_body(speed_result, 0,0))
-
+        self.output.move_forward(target, speed)
 
     #Look through this later
     # + is a CCW rotaion, - is a CW rotation.
     def turn(self, target):
-        state = 'Angular'
-        speed_result = 0
-        #check this?
-        self.output.motion_pub.publish(self.output.twist_body(0,0, speed_result))
+        state = "Angular"
+        #Retreive marker ID, ETL to weight (One-time ALVAR markers obtained)
+        alvar_msg = rospy.wait_for_message('/ar_pose_marker', AlvarMarkers)        
+        #return highest weight among multiple items
+        weight_result = self.etl_msg(alvar_msg, state)
+
+        #speed conversion
+        speed = self.speed_conversion(weight_result, state)
+
+        if target>=0:
+            self.output.rotate_clock(target, speed)
+        else:
+            self.output.rotate_anticlock(target,speed)
+
            
-           
+    def speed_conversion(self,weight, state):
+        aconf = rospy.wait_for_message('/movo/feedback/active_configuration', Configuration)
+        max_linear = aconf.x_vel_limit_mps
+        max_angular = aconf.yaw_rate_limit_rps
+
+        if state =="Linear":
+            speed = max_linear -(max_linear*weight)
+            return speed
+        if state =="Angular":
+            speed = max_angular - (max_angular*weight)
+            return speed
+
+
+
     #Load weight from result folder
     def load(self,state,id):
         result = self.weight_load.load_result(state,id)
@@ -110,20 +120,19 @@ class Demo1(object):
 if __name__ == "__main__":
     rospy.init_node("demo1")
     Demo = Demo1()
+    #Set param to experimental mode
+    Demo.dynamic_parameters(1)
+    print("Dummy2")
+    Demo.forward(100.0)
+    #Demo.turn(90)
+    #Demo.forward(3.5)
+    #Demo.turn(-180)
+    rospy.signal_shutdown(True)
+    rospy.spin()
+
+
+
     #Test ID_1 from result
     #Demo.load("Angular",1)
     #Demo.load("Linear",1)
-    print("Dummy2")
-    Demo.forward(1)
-    rospy.spin()
 
-#Every trigger    
-#See once
-#Load weight (if multi weight, get once)
-
-#Loop check with Odom
-    #Finish each task
-#Finish
-
-#active config
-#set to MOVO drive

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+#Note, this base_output is previously used during the learning process. For the execution process, we use the robot's source code to execute the assigned waypoint.
+
 #MOVO modules
 #from system_defines import *
 

@@ -51,7 +51,7 @@ class Data(object):
                 #create header
                 writer = csv.writer(open_dat)
                 #Header
-                writer.writerow(["Timestamp", "Weight", "Object", "Predictive", "Reflexive", "Derivative", "ico_output"])
+                writer.writerow(["Timestamp", "Weight", "Object", "Predictive", "Reflexive", "Derivative", "ico_output", "Feedback_x", "Feedback_z"])
                 print("[INFO]: File: "+filename+" has been created")
         except:
             print("[ERROR]: Cannot create: ", filename)
@@ -59,12 +59,12 @@ class Data(object):
             sys.exit()        
 
     #Save information to the target file.
-    def save(self, filename, stamp, weight, object, predict, reflex, derivative, ico_out):
+    def save(self, filename, stamp, weight, object, predict, reflex, derivative, ico_out, feedback_x, feedback_z):
         path = self.filepath(filename)
         try:
             with open(path,'a') as open_dat:
                 writer = csv.writer(open_dat)
-                writer.writerow([stamp, weight, object ,predict, reflex, derivative, ico_out])
+                writer.writerow([stamp, weight, object ,predict, reflex, derivative, ico_out, feedback_x, feedback_z])
                 print("[INFO]: Information has been saved")
         except:
             print("[ERROR]]: Cannot save: ", filename)
@@ -111,7 +111,50 @@ class Data(object):
                     time.sleep(30)
                     sys.exit()
 
-        except:
+        except: 
             print("[ERRROR]: Cannot load weight from: ", result_file)
             time.sleep(30)
             sys.exit()
+
+    def feedback_check(self, path):
+        try:
+            if (os.path.exists(path) == True):
+                print("[INFO]: File exists")
+            else:
+                print("[INFO]: Creates a new file")
+                self.feedback_create(path)
+        except: 
+            print("[ERROR]: File check error, please check filename")
+            time.sleep(30)
+            sys.exit()
+        
+    def feedback_create(self, path):
+        print(path)
+        try:
+            with open(path,'w') as open_dat:
+                #create header
+                writer = csv.writer(open_dat)
+                #Header
+                writer.writerow(["Timestamp", "Vel_X", "Vel_Y", "Ang_Z"])
+                print("[INFO]: File has been created")
+        except:
+            print("[ERROR]: Cannot create file")
+            time.sleep(30)
+            sys.exit()       
+
+    def save_feedback(self, name, timestamp, vel_x, vel_y, ang_z):
+        feedback_file = "feedback/"+name+".csv"
+        path = self.filepath(feedback_file)
+        #print(path)
+        self.feedback_check(path)
+
+        try:
+            with open(path, 'a') as f:
+                writer = csv.writer(f)
+                writer.writerow([timestamp, vel_x, vel_y, ang_z])
+                print("[INFO]: Feedback has been logged")
+        except:
+                print("[ERROR]: File cannot be logged")
+
+    
+

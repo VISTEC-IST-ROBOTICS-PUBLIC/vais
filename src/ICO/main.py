@@ -1,5 +1,6 @@
 import rospy
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
+from nav_msgs.msg import Odometry
 from vais.msg import vais_param
 from std_msgs.msg import Bool, Float32, String
 from signals import ICO_Signal
@@ -21,6 +22,9 @@ class Core(object):
         self.ar_capture = False
         self.prev_reflex = 0
         self.move = False
+        self.feedback_x = 0
+        self.feedback_z = 0
+
 
         #Instantiation
         self.signal = ICO_Signal()
@@ -37,6 +41,7 @@ class Core(object):
         rospy.Subscriber('/signal/shutdown', Bool, self.shutdown_cb, queue_size =1)
         rospy.Subscriber('/data/vais_param', vais_param , self.vais_cb, queue_size=1)
         rospy.Subscriber('/robot/move', Bool, self.move_cb, queue_size=1)
+        rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.feedback_cb, queue_size=1)
 
     def main(self, time, pos_dict):
         #Use menu node to manually capture an AR reference position
@@ -49,7 +54,7 @@ class Core(object):
                 diff = self.diff_time(time)
                 #This human readable date time is used in the output log
                 date_time = datetime.datetime.fromtimestamp(time.to_sec())
-                result = self.learn.ico(date_time, diff, self.state, self.l_rate, self.sig_dict, self.prev_dict, self.move)
+                result = self.learn.ico(date_time, diff, self.state, self.l_rate, self.sig_dict, self.prev_dict, self.move, self.feedback_x, self.feedback_z)
 
                 #On screen for debug
                 print("[INFO: RESULT]", result)
@@ -66,6 +71,16 @@ class Core(object):
         else:
             #print("[Error]: please check reference position")
             pass
+    
+    def feedback_cb(self, fb):
+        if fb.twist.twist:
+            self.feedback_x = fb.twist.twist.linear.x   
+            self.feedback_z = fb.twist.twist.angular.z
+        else:
+            self.feedback_x = 0
+            self.feedback_z = 0
+        pass
+
 
     def diff_time(self, time):
         #Later time step

@@ -9,7 +9,7 @@ class Learning(object):
         self.res_dict = {}              #Store results in Python dict.
         self.p_fact = 0.01              #Predictive factor in result (In this case, predictive signal becomes less significant since we have the other signal (object detection) regulating an initial speed)
 
-    def ico(self, time, diff_time, state, l_rate , sig_dict, prev_dict, move):
+    def ico(self, time, diff_time, state, l_rate , sig_dict, prev_dict, move, feedback_x, feedback_z):
         if prev_dict:
             #Retrieve each object ID in dictionary
             for key in sig_dict:
@@ -26,7 +26,7 @@ class Learning(object):
                     new_weight = self.signal.truncated((p_weight+delta))
                     #Only log value when the robot moves
                     if move == True:
-                        self.data.save(filename, time, new_weight, sig_dict[key][0], sig_dict[key][1], sig_dict[key][2], delta, result)
+                        self.data.save(filename, time, new_weight, sig_dict[key][0], sig_dict[key][1], sig_dict[key][2], delta, result, feedback_x, feedback_z)
                     self.res_dict[key] = result
                 else:
                     print("[ERROR]: Cannot obtain any object ID from signal dictionary")

@@ -8,6 +8,7 @@ from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from ICO.data_management import Data
 from geometry_msgs.msg import Twist
 from movo_msgs.msg import *
+from nav_msgs.msg import Odometry
 
 import time
 
@@ -17,8 +18,10 @@ class Demo1(object):
 
         #Instantiation
         self.move_cmd = Twist()
-        self.weight_load = Data()
+        self.dmm = Data()
         self.output = BaseMotion()
+        
+        rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
 
     # Move by x meter(s)
     def forward(self, target):
@@ -89,7 +92,7 @@ class Demo1(object):
 
     #Load weight from result folder
     def load(self,state,id):
-        result = self.weight_load.load_result(state,id)
+        result = self.dmm.load_result(state,id)
         return result
 
     #Extract-Transform-Load from Alvar msg to weight
@@ -139,25 +142,47 @@ class Demo1(object):
         else:
             print("[ERROR]: Please check input")
 
+    def log(self, timestamp, vel_x, vel_y, ang_z):
+        #Read wheel odometry
+
+        self.dmm.save_feedback('waypoint',timestamp, vel_x, vel_y, ang_z)
+        #Store value as CSV
+        pass
+
+
+    #Wheel Odometry callback
+    def odom_cb(self, value):
+        timestamp = value.header.stamp
+        #timestamp = datetime.datetime.fromtimestamp(timestamp.to_sec())
+        print(timestamp)
+        vel_x = value.twist.twist.linear.x
+        vel_y = value.twist.twist.linear.y
+        ang_z = value.twist.twist.angular.z
+        print(timestamp, vel_x, vel_y, ang_z)
+        self.log(timestamp, vel_x, vel_y, ang_z)
+
+
+
 if __name__ == "__main__":
     rospy.init_node("demo1")
     Demo = Demo1()
     #Set param to experimental mode
     Demo.dynamic_parameters(1)
-    
-    time.sleep(10)
+
+    #time.sleep(10)
     print("Start moving")
-    Demo.forward(1.7)
+    #Demo.forward(1.7)
     Demo.turn(90)
-    Demo.forward(3.1)
-    print("Pause")
-    time.sleep(20)
-    print("Resume")
+    #Demo.forward(3.1)
+    #print("Pause")
+    #time.sleep(20)
+    #print("Resume")
     Demo.turn(-180)
-    #time.sleep(1000)
-    Demo.forward(3.0)
-    Demo.turn(90)
-    Demo.backward(1.7)
+    ##time.sleep(1000)
+    #Demo.forward(3.0)
+    #Demo.turn(90)
+    #Demo.backward(1.7)
+
     rospy.signal_shutdown(True)
     rospy.spin()
 

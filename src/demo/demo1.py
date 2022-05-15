@@ -10,7 +10,8 @@ from geometry_msgs.msg import Twist
 from movo_msgs.msg import *
 from nav_msgs.msg import Odometry
 
-import time
+
+import time, datetime
 
 
 class Demo1(object):
@@ -20,6 +21,8 @@ class Demo1(object):
         self.move_cmd = Twist()
         self.dmm = Data()
         self.output = BaseMotion()
+
+        self.ico_out = 0.0
         
         rospy.Subscriber('/movo/feedback/wheel_odometry', Odometry, self.odom_cb, queue_size = 1)
 
@@ -30,7 +33,7 @@ class Demo1(object):
         alvar_msg = rospy.wait_for_message('/ar_pose_marker', AlvarMarkers)        
         #return highest weight among multiple items
         weight_result = self.etl_msg(alvar_msg, state)
-
+        self.ico_out = weight_result
         #speed conversion
         speed = self.speed_conversion(weight_result, state)
     
@@ -45,7 +48,7 @@ class Demo1(object):
         alvar_msg = rospy.wait_for_message('/ar_pose_marker', AlvarMarkers)        
         #return highest weight among multiple items
         weight_result = self.etl_msg(alvar_msg, state)
-
+        self.ico_out = weight_result
         #speed conversion
         speed = self.speed_conversion(weight_result, state)
     
@@ -63,7 +66,7 @@ class Demo1(object):
         alvar_msg = rospy.wait_for_message('/ar_pose_marker', AlvarMarkers)        
         #return highest weight among multiple items
         weight_result = self.etl_msg(alvar_msg, state)
-
+        self.ico_out = weight_result
         #speed conversion
         speed = self.speed_conversion(weight_result, state)
 
@@ -142,10 +145,10 @@ class Demo1(object):
         else:
             print("[ERROR]: Please check input")
 
-    def log(self, timestamp, vel_x, vel_y, ang_z):
+    def log(self, timestamp, ico_out, vel_x, vel_y, ang_z):
         #Read wheel odometry
 
-        self.dmm.save_feedback('waypoint',timestamp, vel_x, vel_y, ang_z)
+        self.dmm.save_feedback('waypoint',timestamp, ico_out, vel_x, vel_y, ang_z)
         #Store value as CSV
         pass
 
@@ -153,13 +156,13 @@ class Demo1(object):
     #Wheel Odometry callback
     def odom_cb(self, value):
         timestamp = value.header.stamp
-        #timestamp = datetime.datetime.fromtimestamp(timestamp.to_sec())
+        timestamp = datetime.datetime.fromtimestamp(timestamp.to_sec())
         print(timestamp)
         vel_x = value.twist.twist.linear.x
         vel_y = value.twist.twist.linear.y
         ang_z = value.twist.twist.angular.z
-        print(timestamp, vel_x, vel_y, ang_z)
-        self.log(timestamp, vel_x, vel_y, ang_z)
+        print(timestamp, self.ico_out, vel_x, vel_y, ang_z)
+        self.log(timestamp, self.ico_out, vel_x, vel_y, ang_z)
 
 
 
@@ -169,19 +172,19 @@ if __name__ == "__main__":
     #Set param to experimental mode
     Demo.dynamic_parameters(1)
 
-    #time.sleep(10)
+    time.sleep(10)
     print("Start moving")
-    #Demo.forward(1.7)
+    Demo.forward(1.7)
     Demo.turn(90)
-    #Demo.forward(3.1)
-    #print("Pause")
-    #time.sleep(20)
-    #print("Resume")
+    Demo.forward(3.1)
+    print("Pause")
+    time.sleep(20)
+    print("Resume")
     Demo.turn(-180)
-    ##time.sleep(1000)
-    #Demo.forward(3.0)
-    #Demo.turn(90)
-    #Demo.backward(1.7)
+    #time.sleep(1000)
+    Demo.forward(3.0)
+    Demo.turn(90)
+    Demo.backward(1.7)
 
     rospy.signal_shutdown(True)
     rospy.spin()

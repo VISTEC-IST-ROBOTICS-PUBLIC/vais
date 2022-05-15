@@ -3,18 +3,18 @@
    <arg name="MOVO_topic" default="/movo_camera/qhd/image_color" />
    <arg name="camera_topic" default="/cv_camera/image_raw" />
 
-   <external camera node>
+   <!--external camera node-->
    <node name="cv_camera" pkg="cv_camera" type="cv_camera_node" >
       <param name="device_id" type="int" value="0" />
    </node>
 
-   <!--viewer-->
+   <!--viewer>
    <node name ="MOVO_viewer" pkg="image_view" type="image_view" >
       <remap from="image"   to="$(arg MOVO_topic)" />   
    </node>
    <node name ="cam_viewer" pkg="image_view" type="image_view" >
       <remap from="image"   to="$(arg camera_topic)" />   
-   </node>   
+   </node-->   
 
 
    <!--recorder-->
@@ -26,7 +26,7 @@
    </node>
 
    <node name ="cam_recorder" pkg="image_view" type="video_recorder" >
-      <param name="filename" type="string" value="/home/ist/camera.avi" /> 
+      <param name="filename" type="string" value="/home/ist/PC_camera.avi" /> 
       <param name="fps" type="int" value="30" />
       <remap from="image"   to="$(arg camera_topic)" />
    </node>

@@ -25,6 +25,7 @@ class Menu(object):
     def default_value(self):                                                                        #Default values
         msg = vais_param()
         msg.state = 'Angular'
+        msg.ar_id = 10
         msg.e_object = 1
         msg.p_object = 3
         msg.r_object = 7
@@ -32,7 +33,7 @@ class Menu(object):
         msg.goal_x = 4
         msg.goal_y =0
         msg.goal_z = 90
-        msg.decel_factor = 0.1                                                                      #90% of goal reach
+        msg.decel_factor = 0.1                                                                   #90% of goal reach
         self.vais_pub.publish(msg)
 
     def input_ver(self, sys_version, st_value):                                                     #Recieves input from user, check python version in a machine.
@@ -93,7 +94,12 @@ class Menu(object):
         print("Waiting for dynamic reconfigure connection")
         client = dynamic_reconfigure.client.Client("movo/movo_driver", timeout=20)
   
-        rcv_input = self.input_ver(sys.version_info[0], 0)
+        #Use this in case of testing between optimal/default value
+        #rcv_input = self.input_ver(sys.version_info[0], 0)
+
+        #Experimental mode
+        rcv_input = 1
+
         if (rcv_input == 1):
             #experiment
             print("Experiment dynamic parameters are loaded")
@@ -162,9 +168,14 @@ class Menu(object):
         #Load dynamic parameters from robot.
         self.dynamic_parameters()
 
+        #Use this to test on multiple parameters tuning
         #Load VAIS parameters or entering it manually.
-        self.input_selection()
+        #self.input_selection()
         
+
+        #Skip manual input
+        self.default_value()
+
         #Choose the option to operate the robot.
         self.option()
 

@@ -24,6 +24,7 @@ class Core(object):
         self.move = False
         self.feedback_x = 0
         self.feedback_z = 0
+        self.ar_id = None
 
 
         #Instantiation
@@ -146,8 +147,8 @@ class Core(object):
                 #Avoid nan value and unnecessary alvar_tag
                 #if value.id < 1 or value.id > 17 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z):
                 
-                #This method is safer to specfied a single alvar_tag to avoid a ghosting tag
-                if value.id != 10 or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z): 
+                #This method is safer to specfied a single alvar_tag to avoid a ghosting tag, ar_id
+                if value.id != self.ar_id or math.isnan(value.pose.pose.position.x) or math.isnan(value.pose.pose.position.y) or math.isnan(value.pose.pose.position.z): 
                     pass
                 else:
                     pos_dict[value.id] = [value.pose.pose.position.x, value.pose.pose.position.y, value.pose.pose.position.z]
@@ -164,6 +165,7 @@ class Core(object):
     def vais_cb(self, data):                                                                            #Read VAIS parameters from menu
         self.state = data.state
         self.l_rate = data.l_rate
+        self.ar_id = data.ar_id
         self.thr_list = [data.e_object, data.p_object, data.r_object]
 
     def shutdown_cb(self, signal):

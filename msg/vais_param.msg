@@ -1,5 +1,6 @@
 Header header
 string state
+int32 ar_id
 float32 e_object
 float32 p_object
 float32 r_object

@@ -135,14 +135,14 @@ class Data(object):
                 #create header
                 writer = csv.writer(open_dat)
                 #Header
-                writer.writerow(["Timestamp", "Vel_X", "Vel_Y", "Ang_Z"])
+                writer.writerow(["Timestamp", "ico_out", "Vel_X", "Vel_Y", "Ang_Z"])
                 print("[INFO]: File has been created")
         except:
             print("[ERROR]: Cannot create file")
             time.sleep(30)
             sys.exit()       
 
-    def save_feedback(self, name, timestamp, vel_x, vel_y, ang_z):
+    def save_feedback(self, name, timestamp, ico_out, vel_x, vel_y, ang_z):
         feedback_file = "feedback/"+name+".csv"
         path = self.filepath(feedback_file)
         #print(path)
@@ -151,7 +151,7 @@ class Data(object):
         try:
             with open(path, 'a') as f:
                 writer = csv.writer(f)
-                writer.writerow([timestamp, vel_x, vel_y, ang_z])
+                writer.writerow([timestamp, ico_out, vel_x, vel_y, ang_z])
                 print("[INFO]: Feedback has been logged")
         except:
                 print("[ERROR]: File cannot be logged")

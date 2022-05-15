@@ -199,7 +199,7 @@ class MOVO_output(object):
                   drive = 0
 
                 print("Angular:  ", drive)
-                #self.motion_pub.publish(self.twist_body(0, 0, drive))
+                self.motion_pub.publish(self.twist_body(0, 0, drive))
             else:
                 #print("[ERROR]: Please check a state command")
                 pass

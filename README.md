@@ -42,3 +42,6 @@ However, if the user has the other robot, user need to change the direction of t
 1. User can create a new camera launch file and edit the ```alvar.launch``` file on "cam_image_topic", "cam_info_topic", "output_frame" to the robot you are working on.
 
 2. Create or edit the ```vais/src/output/base_output.py``` to subscribe and publish these topics according to your robot.
+
+# Note
+In this source code, the folder ICO is the modified Input Correlation-Based Learning (mICO) corresponding to the paper.

@@ -1,6 +1,6 @@
 # Visual-Based Adpative Interaction System 
 
-This is a source code of Visual-Based Adaptive Interaction System (VAIS) using visual information and a fast neural learning mechanism called Modified Input Correlation-Based Learning (MICO) to improve a service delivery on a mobile service robot (MOVO).
+This is a source code of Visual-Based Adaptive Interaction System (VAIS) using visual information and a fast neural learning mechanism called modified Input Correlation-Based Learning (mICO) to improve a service delivery on a mobile service robot (MOVO).
 
 ---
 

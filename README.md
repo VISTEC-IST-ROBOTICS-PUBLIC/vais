@@ -23,10 +23,11 @@ This framework is divided into four sub-components:
 # Structure
 This source code is based on ROS-Python containing:
 
-1. launch: This launch folder contains files which is used to execute ROS package via ```roslaunch``` command.
-2. script: This script folder contains necessary files that called methods from src folder which executed in roslaunch.
-3. msg: This is a folder which stored a custom message file.
-4. src: This folder contain a main source code. In this folder, the source code contains 6 sub-folders:
+1. delivery_sim: This folder contains a 2D simulator which is a simplify version of the delivery service comparing with RL and mISO.
+2. launch: This launch folder contains files which is used to execute ROS package via ```roslaunch``` command.
+3. script: This script folder contains necessary files that called methods from src folder which executed in roslaunch.
+4. msg: This is a folder which stored a custom message file.
+5. src: This folder contain a main source code. In this folder, the source code contains 6 sub-folders:
 
 - ICO: This folder is where the learning modules are stored. It contains signal generator, mICO learning, and data management to store/load the learning weight. The output of this module is a neural output (o_neural) which is used in an output method.
 - demo: A demo source code which performed a combination of both translational and rotational motions in a controlled environment.

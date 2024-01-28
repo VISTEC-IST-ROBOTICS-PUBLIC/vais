@@ -20,6 +20,22 @@ This framework is divided into four sub-components:
 3. MICO: A fast modified neural network that adapt the robot behavior (speed) based on the relationship between the input signals.
 4. Output Conversion: The conversion of neural output to the robot's speed output.
 
+# Structure
+This source code is based on ROS-Python containing:
+
+1. launch: This launch folder contains files which is used to execute ROS package via ```roslaunch``` command.
+2. script: This script folder contains necessary files that called methods from src folder which executed in roslaunch.
+3. msg: This is a folder which stored a custom message file.
+4. src: This folder contain a main source code. In this folder, the source code contains 6 sub-folders:
+
+- ICO: This folder is where the learning modules are stored. It contains signal generator, mICO learning, and data management to store/load the learning weight. The output of this module is a neural output (o_neural) which is used in an output method.
+- demo: A demo source code which performed a combination of both translational and rotational motions in a controlled environment.
+- menu: This is a main menu where the user can choose to operate the script with a default paramters or enter the manual values for the learning mechanism.
+- output: This output folder receives the neural output from the mICO module, and convert it into the robot's output speed (o_speed). Noted that this module is specifically to a MOVO module. In case of the other robot, user need to rewrite this code to operate on that robot.
+- posture: This is only used for a MOVO to adjust it into a specific posture.
+- test: A test folder which copied some script from MOVO package to test some MOVO specific components.
+
+
 # Execution
 
 1. Start a camera node by ```roslaunch vais camera.launch```.

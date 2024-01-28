@@ -191,7 +191,7 @@ mICO log can be found at \data folder in form of .csv file
 
 # RL Parts
 ## Template
-For the Reinforcement learning part, we use the "Proximal Policy Optimization", the policy-based method to directly optimize the policy without explicitly learning a value functions. In addition, the mechanism of PPO try to update the policy closely to the previous policy to make sure that the policy remain stable on each update. In this case, the initial speed of the tray is starting from the randomness and the learning mechanism will slowly update its policy and its actions through the reinforcement learning.
+For the Reinforcement learning part, we use the "Proximal Policy Optimization", the policy-based method (John et al., 2017) to directly optimize the policy without explicitly learning a value functions. In addition, the mechanism of PPO try to update the policy closely to the previous policy to make sure that the policy remain stable on each update. In this case, the initial speed of the tray is starting from the randomness and the learning mechanism will slowly update its policy and its actions through the reinforcement learning.
 
 ## Environment
 The simulation environment has been converted into the object-oriented structure in order to setup the multiple environment (running agents in multiple environment at the same time) called on the reinforcement learning module. Also the multiple methods for reinforcement learning (i.e, get_reward, get_observation, etc.) are added in this module.
@@ -264,10 +264,14 @@ From the screenshots, we can see that the object on the mICO slipped more than P
 ## Conclusion
 The mICO takes less time consuming and receive the optimal speed faster than the RL (PPO) as the simple nueral network is fast and can update in a real-time from the feedback while Reinforcement Learning has to train for the model and verify with the evaluation method to obtain the proper speed. In additional, PPO starts off with the guess of an initial speed (same as the human behavior where we have no clue for the first time) and adjust it through the training process (same as the manual tune of the human). One of the issue that have been founded in the PPO-RL is there is a chance where the PPO is keep failing to deliver the object because the speed initialization is too far away from the appropriate speed point and the updates are slow due to the nature of the mechanisms.
 
-# Update
-
-### Comparison between mISO and mICO
+# Comparison between mISO and mICO
 
 ![mISO_with_noise_result](delivery_sim/image/6-mISO_mICO_comparison.png)
 
-The comparison of mISO and mICO has been added to exhibit the difference between these two mechanisms. In this part, the mISO learning uses a change of output to update a learning weight while the mICO uses a change of reflexive signal instead. In addition, we introduce a noise term added to the position of the object (between 0-5 px) to simulate the deviation of the object due to the external disturbance. The results are exhibited on the figure above where the mISO learning stops learning at 4th attempt (2.25 s) due to the unstable output causing the learning weight exceeding the value of 1, while the mICO can continue to learn until it reaches the optimal weight at 6th attempt (where the reflexive signal is avoided). Noted that the flat line in both graphs represented the object is located in the exemption area. Hence, there is no learning from both mechanisms.
+The comparison of mISO and mICO is performed to exhibit the difference between these two mechanisms. In this part, the mISO learning uses a change of output to update a learning weight while the mICO uses a change of reflexive signal instead. In the test, we introduce a noise term added to the position of the object (between 0-5 px) to simulate the deviation of the object due to the external disturbance. The results are exhibited on the figure above where the mISO learning mechanism keeps on growing the learning weight due to the unstable output causing the weight exceeding the value of 1 meaning that the learning is failed due to the robot decide not to move itself, while the mICO can continue to learn until it reaches the optimal weight after 5th attempt (where the reflexive signal is avoided) and the learning process stops. Noted that the flat line in both graphs represented the object is located in the exemption area. Hence, there is no learning from both mechanisms. For the comparison, mISO learning mechanism is based on a differential Hebbian learning rule (ISO-learning) (Porr and Woergoetter, 2003). In other words, we implemented the ISO learning rule in our neural setup (see Fig. XXX in the manuscript)
+
+# References:
+
+[John et al., 2017] John S., Filip W., Prafulla D., Alec R. and Oleg K. (2017) Proximal Policy Optimization Algorithms. arXiv ePrint arXiv: 107.06347.
+
+[Porr and Woergoetter, 2003] Porr B. Woergoetter F. (2003) Isotropic sequence order learning in a closed loop behavioral system. Roy Soc Phil TransMathematical Physical Engineer Sci: 361:2225-2244
